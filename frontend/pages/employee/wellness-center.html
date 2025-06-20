@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Center - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="wellnessCenter()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'U'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'User'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'employee@company.com'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="employee-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-home w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="leave-request.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-plus w-5 h-5 mr-3"></i>
+                <span>Apply Leave</span>
+            </a>
+            <a href="my-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-history w-5 h-5 mr-3"></i>
+                <span>Leave History</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Center</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="employee-notices.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Wellness Center</h1>
+                        <p class="text-gray-600 mt-1">Discover articles and resources for your wellbeing</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" x-model="searchTerm" placeholder="Search articles..."
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-8">
+            <!-- Categories Filter -->
+            <div class="mb-8">
+                <div class="flex flex-wrap gap-2">
+                    <button @click="selectedCategory = 'all'" 
+                        :class="selectedCategory === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                        class="px-4 py-2 rounded-lg border border-gray-300 transition-colors">
+                        All Articles
+                    </button>
+                    <template x-for="category in categories" :key="category">
+                        <button @click="selectedCategory = category" 
+                            :class="selectedCategory === category ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                            class="px-4 py-2 rounded-lg border border-gray-300 transition-colors"
+                            x-text="category">
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Featured Article -->
+            <div x-show="featuredArticle && filteredArticles.length > 0" class="mb-8">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="md:flex">
+                        <div class="md:w-1/3">
+                            <div class="h-48 md:h-full bg-green-100 flex items-center justify-center">
+                                <i class="fas fa-heart text-green-600 text-4xl"></i>
+                            </div>
+                        </div>
+                        <div class="md:w-2/3 p-6">
+                            <div class="flex items-center mb-2">
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">Featured</span>
+                                <span class="ml-2 text-sm text-gray-500" x-text="featuredArticle?.category"></span>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-3" x-text="featuredArticle?.title"></h2>
+                            <p class="text-gray-600 mb-4" x-text="featuredArticle?.excerpt"></p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <span x-text="featuredArticle?.author?.name"></span>
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span x-text="featuredArticle?.readTime + ' min read'"></span>
+                                </div>
+                                <button @click="viewArticle(featuredArticle)" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                                    Read Article
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Articles Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="article in filteredArticles" :key="article._id">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden card-hover cursor-pointer"
+                         @click="viewArticle(article)">
+                        <div class="h-48 bg-gray-100 flex items-center justify-center">
+                            <i :class="{
+                                'fas text-4xl': true,
+                                'fa-brain text-purple-600': article.category === 'Mental Health',
+                                'fa-dumbbell text-blue-600': article.category === 'Physical Fitness',
+                                'fa-apple-alt text-green-600': article.category === 'Nutrition',
+                                'fa-balance-scale text-indigo-600': article.category === 'Work-Life Balance',
+                                'fa-leaf text-teal-600': article.category === 'Stress Management',
+                                'fa-heart text-red-600': article.category === 'General Wellness'
+                            }"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span :class="{
+                                    'text-xs font-medium px-2 py-1 rounded-full': true,
+                                    'bg-purple-100 text-purple-800': article.category === 'Mental Health',
+                                    'bg-blue-100 text-blue-800': article.category === 'Physical Fitness',
+                                    'bg-green-100 text-green-800': article.category === 'Nutrition',
+                                    'bg-indigo-100 text-indigo-800': article.category === 'Work-Life Balance',
+                                    'bg-teal-100 text-teal-800': article.category === 'Stress Management',
+                                    'bg-red-100 text-red-800': article.category === 'General Wellness'
+                                }" x-text="article.category"></span>
+                                <span class="text-xs text-gray-500">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    <span x-text="article.views || 0"></span>
+                                </span>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2" x-text="article.title"></h3>
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-3" x-text="article.excerpt"></p>
+                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <span x-text="article.author?.name"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span x-text="article.readTime + ' min'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
+                <p class="mt-4 text-gray-600">Loading wellness articles...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="!loading && filteredArticles.length === 0" class="text-center py-12">
+                <i class="fas fa-heart text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No articles found</h3>
+                <p class="text-gray-600">Try adjusting your search or category filter.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Article Modal -->
+    <div x-show="showArticleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" @click.away="showArticleModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span :class="{
+                            'text-xs font-medium px-2 py-1 rounded-full': true,
+                            'bg-purple-100 text-purple-800': selectedArticle?.category === 'Mental Health',
+                            'bg-blue-100 text-blue-800': selectedArticle?.category === 'Physical Fitness',
+                            'bg-green-100 text-green-800': selectedArticle?.category === 'Nutrition',
+                            'bg-indigo-100 text-indigo-800': selectedArticle?.category === 'Work-Life Balance',
+                            'bg-teal-100 text-teal-800': selectedArticle?.category === 'Stress Management',
+                            'bg-red-100 text-red-800': selectedArticle?.category === 'General Wellness'
+                        }" x-text="selectedArticle?.category"></span>
+                        <span class="text-sm text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            <span x-text="selectedArticle?.readTime + ' min read'"></span>
+                        </span>
+                    </div>
+                    <button @click="showArticleModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mt-4" x-text="selectedArticle?.title"></h2>
+                <div class="flex items-center mt-2 text-sm text-gray-500">
+                    <i class="fas fa-user mr-1"></i>
+                    <span x-text="selectedArticle?.author?.name"></span>
+                    <span class="mx-2">•</span>
+                    <span x-text="new Date(selectedArticle?.createdAt).toLocaleDateString()"></span>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="prose max-w-none">
+                    <p class="text-gray-700 whitespace-pre-wrap" x-text="selectedArticle?.content"></p>
+                </div>
+                
+                <!-- Tags -->
+                <div x-show="selectedArticle?.tags?.length > 0" class="mt-6 pt-6 border-t border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Tags</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="tag in selectedArticle?.tags" :key="tag">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full" x-text="tag"></span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function wellnessCenter() {
+            return {
+                user: null,
+                articles: [],
+                filteredArticles: [],
+                featuredArticle: null,
+                selectedArticle: null,
+                showArticleModal: false,
+                loading: true,
+                searchTerm: '',
+                selectedCategory: 'all',
+                categories: ['Mental Health', 'Physical Fitness', 'Nutrition', 'Work-Life Balance', 'Stress Management', 'General Wellness'],
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        // Fetch user info
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+
+                        // Fetch articles
+                        await this.fetchArticles();
+                    } catch (error) {
+                        console.error('Wellness center init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchArticles() {
+                    try {
+                        const response = await axios.get('/api/wellness/articles');
+                        this.articles = response.data.articles || [];
+                        this.featuredArticle = this.articles[0] || null;
+                        this.filterArticles();
+                    } catch (error) {
+                        console.error('Fetch articles error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                filterArticles() {
+                    let filtered = this.articles;
+
+                    // Filter by category
+                    if (this.selectedCategory !== 'all') {
+                        filtered = filtered.filter(article => article.category === this.selectedCategory);
+                    }
+
+                    // Filter by search term
+                    if (this.searchTerm) {
+                        const term = this.searchTerm.toLowerCase();
+                        filtered = filtered.filter(article => 
+                            article.title.toLowerCase().includes(term) ||
+                            article.content.toLowerCase().includes(term) ||
+                            article.excerpt.toLowerCase().includes(term) ||
+                            article.tags?.some(tag => tag.toLowerCase().includes(term))
+                        );
+                    }
+
+                    this.filteredArticles = filtered;
+                },
+
+                viewArticle(article) {
+                    this.selectedArticle = article;
+                    this.showArticleModal = true;
+                    
+                    // Increment view count
+                    axios.get(`/api/wellness/articles/${article._id}`)
+                        .then(response => {
+                            // Update the article in the list with new view count
+                            const index = this.articles.findIndex(a => a._id === article._id);
+                            if (index !== -1) {
+                                this.articles[index].views = response.data.views;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error updating view count:', error);
+                        });
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('user');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+
+        // Watch for changes in search term and category
+        document.addEventListener('alpine:init', () => {
+            Alpine.effect(() => {
+                const data = Alpine.store('wellnessCenter');
+                if (data) {
+                    data.filterArticles();
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

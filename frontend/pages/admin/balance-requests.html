@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Requests - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="balanceRequestsApp()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'admin@company.com'"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="admin-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Leave Requests</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-plus-circle w-5 h-5 mr-3"></i>
+                <span>Balance Requests</span>
+                <span x-show="pendingRequests > 0" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" x-text="pendingRequests"></span>
+            </a>
+            <a href="manage-users.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Adjust Balance</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notices</span>
+            </a>
+        </nav>
+        
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Balance Increase Requests</h1>
+                        <p class="text-gray-600 mt-1">Review and approve employee requests for additional leave days</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button @click="refreshData()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-refresh mr-2" :class="{ 'fa-spin': loading }"></i>
+                            Refresh
+                        </button>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Last updated</p>
+                            <p class="font-semibold" x-text="lastUpdated"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-8">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Pending Requests</p>
+                            <p class="text-3xl font-bold text-orange-600 mt-2" x-text="pendingRequests">0</p>
+                            <p class="text-sm text-orange-600 mt-1">
+                                <i class="fas fa-clock mr-1"></i>
+                                Needs Review
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Approved Today</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" x-text="approvedToday">0</p>
+                            <p class="text-sm text-green-600 mt-1">
+                                <i class="fas fa-check mr-1"></i>
+                                This Day
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Requests</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-2" x-text="balanceRequests.length">0</p>
+                            <p class="text-sm text-blue-600 mt-1">
+                                <i class="fas fa-list mr-1"></i>
+                                All Time
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-plus-circle text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Days Granted</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-2" x-text="totalDaysGranted">0</p>
+                            <p class="text-sm text-purple-600 mt-1">
+                                <i class="fas fa-gift mr-1"></i>
+                                This Month
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-plus text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6">
+                        <button @click="activeTab = 'pending'" 
+                            :class="activeTab === 'pending' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            Pending Requests
+                            <span x-show="pendingRequests > 0" class="ml-2 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full" x-text="pendingRequests"></span>
+                        </button>
+                        <button @click="activeTab = 'approved'" 
+                            :class="activeTab === 'approved' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            Approved
+                        </button>
+                        <button @click="activeTab = 'rejected'" 
+                            :class="activeTab === 'rejected' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            Rejected
+                        </button>
+                        <button @click="activeTab = 'all'" 
+                            :class="activeTab === 'all' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                            All Requests
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Balance Requests List -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Loading State -->
+                <div x-show="loading" class="p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+                        <i class="fas fa-spinner fa-spin text-2xl text-indigo-600"></i>
+                    </div>
+                    <p class="text-gray-600">Loading balance requests...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && filteredRequests.length === 0" class="p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <i class="fas fa-inbox text-2xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No balance requests found</h3>
+                    <p class="text-gray-600">No employees have requested additional leave days yet.</p>
+                </div>
+
+                <!-- Requests List -->
+                <div x-show="!loading && filteredRequests.length > 0" class="divide-y divide-gray-200">
+                    <template x-for="request in filteredRequests" :key="request._id">
+                        <div class="p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start space-x-4 flex-1">
+                                    <!-- Employee Avatar -->
+                                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-lg font-medium text-indigo-600" x-text="request.employeeId?.name?.charAt(0) || 'U'"></span>
+                                    </div>
+                                    
+                                    <!-- Request Details -->
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            <h3 class="text-lg font-semibold text-gray-900" x-text="request.employeeId?.name || 'Unknown Employee'"></h3>
+                                            <span :class="{
+                                                'px-3 py-1 text-xs font-medium rounded-full': true,
+                                                'bg-orange-100 text-orange-800': request.status === 'Pending',
+                                                'bg-green-100 text-green-800': request.status === 'Approved',
+                                                'bg-red-100 text-red-800': request.status === 'Rejected'
+                                            }" x-text="request.status"></span>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                                            <div class="flex items-center text-sm text-gray-600">
+                                                <i class="fas fa-calendar-alt mr-2 text-indigo-500"></i>
+                                                <span x-text="request.leaveType + ' Leave'"></span>
+                                            </div>
+                                            <div class="flex items-center text-sm text-gray-600">
+                                                <i class="fas fa-plus mr-2 text-indigo-500"></i>
+                                                <span x-text="request.requestedAmount + ' additional days'"></span>
+                                            </div>
+                                            <div class="flex items-center text-sm text-gray-600">
+                                                <i class="fas fa-clock mr-2 text-indigo-500"></i>
+                                                <span x-text="formatDate(request.createdAt)"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                            <p class="text-sm font-medium text-gray-700 mb-1">Reason:</p>
+                                            <p class="text-sm text-gray-600" x-text="request.reason"></p>
+                                        </div>
+                                        
+                                        <!-- Current Balance Info -->
+                                        <div class="flex items-center text-sm text-gray-500">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            <span>Employee Email: <span x-text="request.employeeId?.email || 'N/A'"></span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="ml-6 flex flex-col space-y-2">
+                                    <div x-show="request.status === 'Pending'" class="flex space-x-2">
+                                        <button @click="approveRequest(request)" 
+                                            class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Approve
+                                        </button>
+                                        <button @click="rejectRequest(request)" 
+                                            class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+                                            <i class="fas fa-times mr-1"></i>
+                                            Reject
+                                        </button>
+                                    </div>
+                                    
+                                    <div x-show="request.status !== 'Pending'" class="text-center">
+                                        <div :class="{
+                                            'w-12 h-12 rounded-lg flex items-center justify-center mx-auto': true,
+                                            'bg-green-100 text-green-600': request.status === 'Approved',
+                                            'bg-red-100 text-red-600': request.status === 'Rejected'
+                                        }">
+                                            <i :class="{
+                                                'fas text-lg': true,
+                                                'fa-check': request.status === 'Approved',
+                                                'fa-times': request.status === 'Rejected'
+                                            }"></i>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="request.status"></p>
+                                        <p x-show="request.processedAt" class="text-xs text-gray-400" x-text="formatDate(request.processedAt)"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Action Confirmation Modal -->
+    <div x-show="showActionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-md w-full mx-4" @click.away="showActionModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold" x-text="actionType === 'approve' ? 'Approve Balance Request' : 'Reject Balance Request'"></h3>
+                <p class="text-gray-600 text-sm mt-1">
+                    <span x-text="selectedRequest?.employeeId?.name"></span> - 
+                    <span x-text="selectedRequest?.requestedAmount + ' ' + selectedRequest?.leaveType?.toLowerCase() + ' days'"></span>
+                </p>
+            </div>
+            
+            <form @submit.prevent="confirmAction()" class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <span x-text="actionType === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason'"></span>
+                    </label>
+                    <textarea x-model="actionNotes" rows="3" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        :placeholder="actionType === 'approve' ? 'Add any notes about this approval...' : 'Please explain why this request is being rejected...'"></textarea>
+                </div>
+
+                <div x-show="actionError" x-text="actionError" class="mb-4 text-red-500 text-sm"></div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" @click="showActionModal = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="actionLoading"
+                        :class="{
+                            'px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white': true,
+                            'bg-green-600 hover:bg-green-700': actionType === 'approve',
+                            'bg-red-600 hover:bg-red-700': actionType === 'reject'
+                        }">
+                        <span x-show="!actionLoading" x-text="actionType === 'approve' ? 'Approve Request' : 'Reject Request'"></span>
+                        <span x-show="actionLoading">Processing...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function balanceRequestsApp() {
+            return {
+                balanceRequests: [],
+                loading: true,
+                user: {},
+                lastUpdated: '',
+                activeTab: 'pending',
+                showActionModal: false,
+                selectedRequest: null,
+                actionType: '',
+                actionNotes: '',
+                actionError: '',
+                actionLoading: false,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    
+                    try {
+                        // Check if user is admin
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+                        if (this.user.role !== 'Admin') {
+                            window.location.href = '../auth/login.html';
+                            return;
+                        }
+                        
+                        await this.fetchBalanceRequests();
+                    } catch (error) {
+                        console.error('Init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchBalanceRequests() {
+                    try {
+                        this.loading = true;
+                        const response = await axios.get('/api/balance-requests/all');
+                        this.balanceRequests = response.data;
+                        this.lastUpdated = new Date().toLocaleTimeString();
+                        console.log('✅ Fetched balance requests:', this.balanceRequests.length);
+                    } catch (error) {
+                        console.error('Error fetching balance requests:', error);
+                        // If endpoint doesn't exist, show empty array
+                        this.balanceRequests = [];
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async refreshData() {
+                    await this.fetchBalanceRequests();
+                },
+
+                get filteredRequests() {
+                    if (this.activeTab === 'all') return this.balanceRequests;
+                    return this.balanceRequests.filter(request => 
+                        request.status.toLowerCase() === this.activeTab.toLowerCase()
+                    );
+                },
+
+                get pendingRequests() {
+                    return this.balanceRequests.filter(r => r.status === 'Pending').length;
+                },
+
+                get approvedToday() {
+                    const today = new Date().toDateString();
+                    return this.balanceRequests.filter(r => 
+                        r.status === 'Approved' && 
+                        new Date(r.processedAt).toDateString() === today
+                    ).length;
+                },
+
+                get totalDaysGranted() {
+                    const thisMonth = new Date();
+                    thisMonth.setDate(1);
+                    return this.balanceRequests
+                        .filter(r => r.status === 'Approved' && new Date(r.processedAt) >= thisMonth)
+                        .reduce((total, r) => total + (r.requestedAmount || 0), 0);
+                },
+
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                },
+
+                approveRequest(request) {
+                    this.selectedRequest = request;
+                    this.actionType = 'approve';
+                    this.actionNotes = '';
+                    this.actionError = '';
+                    this.showActionModal = true;
+                },
+
+                rejectRequest(request) {
+                    this.selectedRequest = request;
+                    this.actionType = 'reject';
+                    this.actionNotes = '';
+                    this.actionError = '';
+                    this.showActionModal = true;
+                },
+
+                async confirmAction() {
+                    this.actionLoading = true;
+                    this.actionError = '';
+
+                    try {
+                        const status = this.actionType === 'approve' ? 'Approved' : 'Rejected';
+                        
+                        await axios.put(`/api/balance-requests/update-status/${this.selectedRequest._id}`, {
+                            status,
+                            notes: this.actionNotes
+                        });
+                        
+                        // Update the request in the list
+                        const index = this.balanceRequests.findIndex(r => r._id === this.selectedRequest._id);
+                        if (index !== -1) {
+                            this.balanceRequests[index].status = status;
+                            this.balanceRequests[index].processedAt = new Date().toISOString();
+                            this.balanceRequests[index].notes = this.actionNotes;
+                        }
+                        
+                        this.showActionModal = false;
+                        
+                        // Show success message
+                        const message = this.actionType === 'approve' 
+                            ? `✅ Balance request approved! ${this.selectedRequest.requestedAmount} ${this.selectedRequest.leaveType.toLowerCase()} days added.`
+                            : `❌ Balance request rejected.`;
+                        alert(message);
+                        
+                    } catch (error) {
+                        console.error('Error processing request:', error);
+                        this.actionError = error.response?.data?.message || 'Error processing request';
+                    } finally {
+                        this.actionLoading = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

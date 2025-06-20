@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEBRON WATER | Modern Leave & Wellbeing Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .testimonial-card {
+            transition: all 0.3s ease;
+        }
+        .testimonial-card:hover {
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Navbar -->
+    <nav class="w-full flex items-center justify-between px-4 md:px-8 py-4 border-b bg-white sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center space-x-2">
+            <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">H</div>
+            <span class="font-bold text-xl tracking-tight">HEBRON WATER</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <a href="/" class="text-primary-600 font-medium border-b-2 border-primary-600 pb-1">Home</a>
+            <a href="#features" class="hover:text-primary-600 transition">Features</a>
+            <a href="#how-it-works" class="hover:text-primary-600 transition">How It Works</a>
+            <a href="#testimonials" class="hover:text-primary-600 transition">Testimonials</a>
+            <a href="#contact" class="hover:text-primary-600 transition">Contact</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="pages/auth/login.html" class="hidden md:block px-4 py-2 border border-primary-600 text-primary-600 rounded-lg font-medium hover:bg-primary-50 transition">Sign In</a>
+            <a href="pages/auth/register.html" class="px-4 py-2 gradient-bg text-white rounded-lg font-medium hover:opacity-90 transition">Get Started</a>
+            <button class="md:hidden text-gray-500 focus:outline-none">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu (Hidden by default) -->
+    <div class="hidden md:hidden bg-white w-full py-4 px-6 shadow-md">
+        <div class="flex flex-col space-y-4">
+            <a href="/" class="text-primary-600 font-medium">Home</a>
+            <a href="#features" class="hover:text-primary-600">Features</a>
+            <a href="#how-it-works" class="hover:text-primary-600">How It Works</a>
+            <a href="#testimonials" class="hover:text-primary-600">Testimonials</a>
+            <a href="#contact" class="hover:text-primary-600">Contact</a>
+            <a href="pages/auth/login.html" class="hover:text-primary-600">Sign In</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-white">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-50 to-white z-0 opacity-70"></div>
+        <div class="max-w-7xl mx-auto px-6 py-20 md:py-28 relative z-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-12">
+                <div class="flex-1">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight text-gray-900">
+                        Modern Leave & <span class="text-primary-600">Wellbeing</span> Management
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-xl">
+                        Streamline your leave requests, track your wellbeing, and stay connected with your team. Built for the modern workplace with employee wellness at its core.
+                    </p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="pages/auth/register.html" class="px-8 py-4 gradient-bg text-white rounded-lg font-semibold shadow-lg hover:opacity-90 transition text-center">
+                            Get Started Free
+                        </a>
+                    </div>
+                    
+                    <div class="mt-10 flex items-center space-x-6">
+                        <div class="flex -space-x-2">
+                            <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <img src="https://randomuser.me/api/portraits/men/54.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <img src="https://randomuser.me/api/portraits/women/45.jpg" alt="User" class="w-10 h-10 rounded-full border-2 border-white">
+                            <div class="w-10 h-10 rounded-full bg-primary-100 border-2 border-white flex items-center justify-center text-primary-600 text-xs font-medium">
+                                +2k
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            <span class="font-semibold text-gray-900">2,000+ employees</span> are already using our platform
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex-1 flex justify-center relative">
+                    <div class="relative">
+                        <!-- Main dashboard card -->
+                        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md z-20 relative animate-float">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-semibold">Employee Dashboard</h3>
+                                <div class="bg-primary-100 text-primary-600 px-3 py-1 rounded-full text-xs font-medium">
+                                    June 2024
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4 mb-6">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium text-gray-500">Leave Balance</span>
+                                        <span class="text-xs text-gray-400">Annual</span>
+                                    </div>
+                                    <div class="flex items-end justify-between">
+                                        <div class="text-3xl font-bold text-gray-900">15 <span class="text-sm font-normal text-gray-500">days</span></div>
+                                        <div class="text-sm text-green-600 flex items-center">
+                                            <i class="fas fa-arrow-up mr-1"></i> 2 days
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-primary-600 h-2 rounded-full" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <div class="text-sm font-medium text-gray-500 mb-2">Pending</div>
+                                        <div class="text-2xl font-bold text-gray-900">2</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <div class="text-sm font-medium text-gray-500 mb-2">Approved</div>
+                                        <div class="text-2xl font-bold text-gray-900">8</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-100 pt-4">
+                                <div class="text-sm font-medium mb-3">Upcoming Leave</div>
+                                <div class="flex items-center p-3 bg-primary-50 rounded-lg border border-primary-100">
+                                    <div class="h-10 w-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center mr-3">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium">Summer Vacation</div>
+                                        <div class="text-xs text-gray-500">Jul 15 - Jul 30</div>
+                                    </div>
+                                    <div class="ml-auto bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                        Approved
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Floating notification card -->
+                        <div class="absolute -bottom-6 -left-16 bg-white rounded-lg shadow-lg p-4 w-64 border border-gray-100 animate-float" style="animation-delay: 0.5s;">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium">Leave Approved!</div>
+                                    <div class="text-xs text-gray-500">Your request has been approved</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Floating wellness card -->
+                        <div class="absolute -top-4 -right-12 bg-white rounded-lg shadow-lg p-4 w-56 border border-gray-100 animate-float" style="animation-delay: 1s;">
+                            <div class="flex items-center mb-2">
+                                <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">
+                                    <i class="fas fa-heartbeat"></i>
+                                </div>
+                                <div class="text-sm font-medium">Wellness Event</div>
+                            </div>
+                            <div class="text-xs text-gray-500">Yoga Session at 5 PM today</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Everything You Need in One Platform</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Our comprehensive leave management system combines powerful features with an intuitive interface to streamline your HR processes.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-calendar-check fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Smart Leave Management</h3>
+                    <p class="text-gray-600 mb-4">Easily request, approve, and track leave with automated workflows and real-time status updates.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            One-click leave requests
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Automated approval workflows
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Calendar integration
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-heartbeat fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Employee Wellbeing Center</h3>
+                    <p class="text-gray-600 mb-4">Access wellness resources, join events, and track your wellbeing journey all in one place.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Curated wellness articles
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Wellness event registration
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Mental health resources
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Powerful Analytics</h3>
+                    <p class="text-gray-600 mb-4">Gain insights into leave patterns, team availability, and wellness metrics with our dashboard.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Real-time data visualization
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Custom report generation
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Trend analysis
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-bell fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Smart Notifications</h3>
+                    <p class="text-gray-600 mb-4">Stay informed with instant notifications for leave requests, approvals, and company announcements.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Email notifications
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            In-app alerts
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Customizable preferences
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-users fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Team Management</h3>
+                    <p class="text-gray-600 mb-4">Manage your team's availability, workload, and leave balances with our intuitive tools.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Team calendar view
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Workload balancing
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Leave balance management
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover border border-gray-100">
+                    <div class="bg-primary-100 text-primary-600 rounded-full p-3 w-14 h-14 flex items-center justify-center mb-5">
+                        <i class="fas fa-shield-alt fa-lg"></i>
+                    </div>
+                    <h3 class="font-semibold text-xl mb-3">Secure & Compliant</h3>
+                    <p class="text-gray-600 mb-4">Rest easy knowing your data is secure and your processes are compliant with regulations.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Role-based access control
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Data encryption
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Compliance reporting
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Our platform simplifies leave management and employee wellbeing in just a few easy steps.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        1
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Request Leave</h3>
+                    <p class="text-gray-600">Submit your leave request with just a few clicks. Choose the type, dates, and add any necessary details.</p>
+                    <img src="https://placeholder.co/300x200?text=Request+Leave" alt="Request Leave" class="mt-6 rounded-lg shadow-md w-full max-w-xs">
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        2
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Get Approval</h3>
+                    <p class="text-gray-600">Managers receive notifications and can approve or reject requests with comments. You'll be notified instantly.</p>
+                    <img src="https://placeholder.co/300x200?text=Approval+Process" alt="Approval Process" class="mt-6 rounded-lg shadow-md w-full max-w-xs">
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        3
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Track & Manage</h3>
+                    <p class="text-gray-600">Monitor your leave balance, view team availability, and access wellness resources all in one dashboard.</p>
+                    <img src="https://placeholder.co/300x200?text=Track+&+Manage" alt="Track and Manage" class="mt-6 rounded-lg shadow-md w-full max-w-xs">
+                </div>
+            </div>
+            
+            <div class="mt-16 text-center">
+                <a href="pages/auth/register.html" class="px-8 py-4 gradient-bg text-white rounded-lg font-semibold shadow-lg hover:opacity-90 transition inline-block">
+                    Start Your Free Trial
+                </a>
+                <p class="text-sm text-gray-500 mt-4">No credit card required. 14-day free trial.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col lg:flex-row gap-12">
+                <div class="flex-1">
+                    <h2 class="text-3xl font-bold mb-6">Get in Touch</h2>
+                    <p class="text-gray-600 mb-8">Have questions or need a demo? Our team is here to help you find the perfect solution for your organization.</p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="bg-primary-100 text-primary-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Our Location</h3>
+                                <p class="text-gray-600">123 Business Avenue, Suite 500<br>San Francisco, CA 94107</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="bg-primary-100 text-primary-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Email Us</h3>
+                                <p class="text-gray-600">info@hebronwater.com<br>support@hebronwater.com</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="bg-primary-100 text-primary-600 rounded-full p-3 mr-4">
+                                <i class="fas fa-phone-alt"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Call Us</h3>
+                                <p class="text-gray-600">+1 (555) 123-4567<br>+1 (555) 987-6543</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 flex space-x-4">
+                        <a href="#" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-full flex items-center justify-center transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-full flex items-center justify-center transition">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-full flex items-center justify-center transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-full flex items-center justify-center transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex-1">
+                    <form class="bg-white rounded-xl shadow-md p-8 border border-gray-100">
+                        <h3 class="text-xl font-semibold mb-6">Send Us a Message</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                                    <input type="text" id="name" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
+                                    <input type="email" id="email" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                <input type="text" id="subject" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Your Message</label>
+                                <textarea id="message" rows="5" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="w-full gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                                Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+                <p class="text-gray-600">Find answers to common questions about our leave management and wellbeing platform.</p>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- FAQ Item 1 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">How do I apply for leave?</h3>
+                    <p class="text-gray-600">Simply log into your employee dashboard and click "Apply Leave" or use the "Quick Leave" button. Fill in your leave type (Sick, Vacation, or Personal), select your dates, and provide a reason. Your request will be sent to administrators for approval and you'll receive real-time status updates.</p>
+                </div>
+                
+                <!-- FAQ Item 2 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">How can I check my leave balance?</h3>
+                    <p class="text-gray-600">Your current leave balances are displayed prominently on your dashboard. You can see your available Sick Leave (10 days), Vacation (15 days), and Personal Leave (5 days). If you need more days, you can request a balance increase directly from the dashboard.</p>
+                </div>
+                
+                <!-- FAQ Item 3 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">What wellness features are available?</h3>
+                    <p class="text-gray-600">Our wellness center includes curated articles on mental health, work-life balance, and physical wellbeing. You can also register for wellness events like yoga sessions, workshops, and team building activities. All wellness content is accessible from your employee dashboard.</p>
+                </div>
+                
+                <!-- FAQ Item 4 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">How do administrators manage leave requests?</h3>
+                    <p class="text-gray-600">Administrators have access to a comprehensive dashboard where they can view all pending leave requests, approve or reject them with comments, manage employee balances, and track leave patterns. They can also create wellness content and company notices.</p>
+                </div>
+                
+                <!-- FAQ Item 5 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">Can I request additional leave days?</h3>
+                    <p class="text-gray-600">Yes! If you need more leave days, you can request a balance increase directly from your dashboard. Click "Request More" next to any leave type, provide a reason and the number of days needed. Administrators will review and approve balance increase requests.</p>
+                </div>
+                
+                <!-- FAQ Item 6 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="font-semibold text-lg mb-2">How do I track my leave history?</h3>
+                    <p class="text-gray-600">Visit the "Leave History" page from your dashboard to see all your past and current leave requests. You can view the status (Pending, Approved, Rejected), dates, and any comments from administrators. Recent requests also appear on your main dashboard.</p>
+                </div>
+            </div>
+            
+            <div class="mt-10 text-center">
+                <p class="text-gray-600 mb-4">Still have questions? We're here to help.</p>
+                <a href="#contact" class="px-6 py-3 gradient-bg text-white rounded-lg font-semibold shadow hover:opacity-90 transition inline-block">
+                    Contact Support
+                </a>
+            </div>
+        </div>
+    </section>
+    
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <!-- Company Info -->
+                <div>
+                    <div class="flex items-center space-x-2 mb-6">
+                        <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">H</div>
+                        <span class="font-bold text-xl tracking-tight">HEBRON WATER</span>
+                    </div>
+                    <p class="text-gray-400 mb-6">Modern leave management and employee wellbeing platform designed for the future of work.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Quick Links</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition">Features</a></li>
+                        <li><a href="#how-it-works" class="text-gray-400 hover:text-white transition">How It Works</a></li>
+                        <li><a href="#pricing" class="text-gray-400 hover:text-white transition">Pricing</a></li>
+                        <li><a href="#testimonials" class="text-gray-400 hover:text-white transition">Testimonials</a></li>
+                        <li><a href="#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Resources</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Tutorials</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">API Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Newsletter -->
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Subscribe to Our Newsletter</h3>
+                    <p class="text-gray-400 mb-4">Get the latest updates, news, and special offers.</p>
+                    <form class="flex">
+                        <input type="email" placeholder="Your email address" class="flex-1 px-4 py-2 rounded-l-lg focus:outline-none text-gray-900">
+                        <button type="submit" class="gradient-bg px-4 py-2 rounded-r-lg hover:opacity-90 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">&copy; 2024 Hebron Water. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Terms of Service</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple JavaScript for mobile menu toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuButton = document.querySelector('button.md\\:hidden');
+            const mobileMenu = document.querySelector('.hidden.md\\:hidden');
+            
+            menuButton.addEventListener('click', function() {
+                if (mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.remove('hidden');
+                } else {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

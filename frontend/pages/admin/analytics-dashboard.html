@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50" x-data="analyticsApp()" x-init="init()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg border-r border-gray-200 z-30">
+        <div class="flex flex-col h-full">
+            <!-- Logo -->
+            <div class="flex items-center px-6 py-4 border-b border-gray-200">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-white text-sm"></i>
+                </div>
+                <span class="ml-3 text-lg font-semibold text-gray-900">LeaveMS Admin</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="admin-dashboard.html" class="flex items-center px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-home w-5 h-5 mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="flex items-center px-3 py-2 text-indigo-600 bg-indigo-50 rounded-lg">
+                    <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                    Analytics
+                </a>
+                <a href="manage-leaves.html" class="flex items-center px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                    Manage Leaves
+                </a>
+                <a href="manage-users.html" class="flex items-center px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-users w-5 h-5 mr-3"></i>
+                    Manage Users
+                </a>
+                <a href="notice-board.html" class="flex items-center px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                    Notice Board
+                </a>
+                <a href="wellness-articles.html" class="flex items-center px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                    Wellness
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="px-4 py-4 border-t border-gray-200">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-shield text-indigo-600 text-sm"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium text-gray-900" x-text="user?.name || 'Admin'"></p>
+                        <p class="text-xs text-gray-500">Administrator</p>
+                    </div>
+                    <button @click="logout()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+                        <p class="text-gray-600 mt-1">Comprehensive insights and reports</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <select x-model="selectedPeriod" @change="fetchAnalytics()" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 3 months</option>
+                            <option value="365">Last year</option>
+                        </select>
+                        <button @click="exportReport()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-6">
+            <!-- Loading State -->
+            <div x-show="loading" class="flex items-center justify-center py-12">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-3xl text-indigo-600 mb-4"></i>
+                    <p class="text-gray-600">Loading analytics data...</p>
+                </div>
+            </div>
+
+            <!-- Analytics Content -->
+            <div x-show="!loading" class="space-y-6">
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Total Leave Requests</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="analytics.totalRequests || 0"></p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span x-text="analytics.requestsGrowth || 0"></span>% from last period
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Approval Rate</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="analytics.approvalRate || 0"></p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span x-text="analytics.approvalGrowth || 0"></span>% improvement
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Average Processing Time</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="analytics.avgProcessingTime || 0"></p>
+                                <p class="text-xs text-red-600 mt-1">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    <span x-text="analytics.processingImprovement || 0"></span>% faster
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Employee Satisfaction</p>
+                                <p class="text-2xl font-bold text-gray-900" x-text="analytics.satisfaction || 0"></p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    Based on feedback surveys
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-smile text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Leave Trends Chart -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Leave Request Trends</h3>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span class="text-sm text-gray-600">Requests</span>
+                                <div class="w-3 h-3 bg-green-500 rounded-full ml-4"></div>
+                                <span class="text-sm text-gray-600">Approved</span>
+                            </div>
+                        </div>
+                        <canvas id="trendsChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <!-- Leave Types Distribution -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Leave Types Distribution</h3>
+                            <select x-model="chartPeriod" @change="updateCharts()" class="px-3 py-1 border border-gray-300 rounded text-sm">
+                                <option value="month">This Month</option>
+                                <option value="quarter">This Quarter</option>
+                                <option value="year">This Year</option>
+                            </select>
+                        </div>
+                        <canvas id="distributionChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Department Analytics -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Department-wise Analytics</h3>
+                        <button @click="toggleView()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">
+                            <i :class="viewMode === 'table' ? 'fas fa-chart-bar' : 'fas fa-table'" class="mr-2"></i>
+                            <span x-text="viewMode === 'table' ? 'Chart View' : 'Table View'"></span>
+                        </button>
+                    </div>
+
+                    <!-- Table View -->
+                    <div x-show="viewMode === 'table'" class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Requests</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approval Rate</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Days</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="dept in analytics.departmentData || []" :key="dept.name">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="dept.name"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="dept.total"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600" x-text="dept.approved"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-yellow-600" x-text="dept.pending"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-500 h-2 rounded-full" :style="`width: ${dept.approvalRate}%`"></div>
+                                                </div>
+                                                <span x-text="dept.approvalRate + '%'"></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="dept.avgDays"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chart View -->
+                    <div x-show="viewMode === 'chart'" class="h-64">
+                        <canvas id="departmentChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Insights -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                        <div class="space-y-4">
+                            <template x-for="activity in analytics.recentActivity || []" :key="activity.id">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center" 
+                                         :class="{
+                                             'bg-green-100 text-green-600': activity.type === 'approved',
+                                             'bg-red-100 text-red-600': activity.type === 'rejected',
+                                             'bg-blue-100 text-blue-600': activity.type === 'submitted'
+                                         }">
+                                        <i :class="{
+                                            'fas fa-check': activity.type === 'approved',
+                                            'fas fa-times': activity.type === 'rejected',
+                                            'fas fa-plus': activity.type === 'submitted'
+                                        }" class="text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-900" x-text="activity.message"></p>
+                                        <p class="text-xs text-gray-500" x-text="activity.time"></p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Key Insights -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Insights</h3>
+                        <div class="space-y-4">
+                            <template x-for="insight in analytics.insights || []" :key="insight.id">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                         :class="{
+                                             'bg-green-100 text-green-600': insight.type === 'positive',
+                                             'bg-yellow-100 text-yellow-600': insight.type === 'warning',
+                                             'bg-blue-100 text-blue-600': insight.type === 'info'
+                                         }">
+                                        <i :class="{
+                                            'fas fa-arrow-up': insight.type === 'positive',
+                                            'fas fa-exclamation-triangle': insight.type === 'warning',
+                                            'fas fa-info-circle': insight.type === 'info'
+                                        }" class="text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-900" x-text="insight.title"></p>
+                                        <p class="text-xs text-gray-500" x-text="insight.description"></p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function analyticsApp() {
+            return {
+                user: null,
+                analytics: {},
+                loading: true,
+                selectedPeriod: '30',
+                chartPeriod: 'month',
+                viewMode: 'table',
+                trendsChart: null,
+                distributionChart: null,
+                departmentChart: null,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    const role = localStorage.getItem('role');
+                    if (role !== 'Admin') {
+                        window.location.href = '../employee/employee-dashboard.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    this.user = JSON.parse(localStorage.getItem('user') || '{}');
+
+                    await this.fetchAnalytics();
+                    this.initializeCharts();
+                },
+
+                async fetchAnalytics() {
+                    this.loading = true;
+                    try {
+                        const response = await axios.get(`/api/admin/analytics?period=${this.selectedPeriod}`);
+                        this.analytics = response.data;
+                        this.updateCharts();
+                    } catch (error) {
+                        console.error('Error fetching analytics:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                initializeCharts() {
+                    // Initialize Trends Chart
+                    const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+                    this.trendsChart = new Chart(trendsCtx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Requests',
+                                data: [],
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.4
+                            }, {
+                                label: 'Approved',
+                                data: [],
+                                borderColor: 'rgb(34, 197, 94)',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                    // Initialize Distribution Chart
+                    const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+                    this.distributionChart = new Chart(distributionCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Sick Leave', 'Vacation', 'Personal'],
+                            datasets: [{
+                                data: [],
+                                backgroundColor: [
+                                    'rgb(239, 68, 68)',
+                                    'rgb(34, 197, 94)',
+                                    'rgb(168, 85, 247)'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+
+                    // Initialize Department Chart
+                    const departmentCtx = document.getElementById('departmentChart').getContext('2d');
+                    this.departmentChart = new Chart(departmentCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Total Requests',
+                                data: [],
+                                backgroundColor: 'rgba(59, 130, 246, 0.8)'
+                            }, {
+                                label: 'Approved',
+                                data: [],
+                                backgroundColor: 'rgba(34, 197, 94, 0.8)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+
+                updateCharts() {
+                    if (!this.analytics.chartData) return;
+
+                    // Update Trends Chart
+                    if (this.trendsChart) {
+                        this.trendsChart.data.labels = this.analytics.chartData.trends.labels || [];
+                        this.trendsChart.data.datasets[0].data = this.analytics.chartData.trends.requests || [];
+                        this.trendsChart.data.datasets[1].data = this.analytics.chartData.trends.approved || [];
+                        this.trendsChart.update();
+                    }
+
+                    // Update Distribution Chart
+                    if (this.distributionChart) {
+                        this.distributionChart.data.datasets[0].data = this.analytics.chartData.distribution || [];
+                        this.distributionChart.update();
+                    }
+
+                    // Update Department Chart
+                    if (this.departmentChart && this.analytics.departmentData) {
+                        this.departmentChart.data.labels = this.analytics.departmentData.map(d => d.name);
+                        this.departmentChart.data.datasets[0].data = this.analytics.departmentData.map(d => d.total);
+                        this.departmentChart.data.datasets[1].data = this.analytics.departmentData.map(d => d.approved);
+                        this.departmentChart.update();
+                    }
+                },
+
+                toggleView() {
+                    this.viewMode = this.viewMode === 'table' ? 'chart' : 'table';
+                },
+
+                async exportReport() {
+                    try {
+                        const response = await axios.get(`/api/admin/export-report?period=${this.selectedPeriod}`, {
+                            responseType: 'blob'
+                        });
+                        
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.setAttribute('download', `leave-analytics-${new Date().toISOString().split('T')[0]}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                    } catch (error) {
+                        console.error('Error exporting report:', error);
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Leave - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="leaveRequestApp()" x-init="init()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'U'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'User'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'employee@company.com'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="employee-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-home w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-calendar-plus w-5 h-5 mr-3"></i>
+                <span>Apply Leave</span>
+            </a>
+            <a href="my-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-history w-5 h-5 mr-3"></i>
+                <span>Leave History</span>
+            </a>
+            <a href="wellness-center.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Center</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="employee-notices.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Apply for Leave</h1>
+                        <p class="text-gray-600 mt-1">Submit a new leave request for approval</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-calendar mr-1"></i>
+                            <span x-text="new Date().toLocaleDateString()"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-6">
+            <div class="max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Leave Application Form -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div class="flex items-center mb-6">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-calendar-plus text-indigo-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h2 class="text-xl font-semibold text-gray-900">Leave Application</h2>
+                                    <p class="text-gray-600">Fill out the form below to request leave</p>
+                                </div>
+                            </div>
+                            
+                            <form @submit.prevent="submitLeave()" class="space-y-6">
+                                <!-- Leave Type -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Leave Type *
+                                    </label>
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <label class="relative">
+                                            <input type="radio" x-model="form.leaveType" value="Sick" class="sr-only">
+                                            <div :class="form.leaveType === 'Sick' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'"
+                                                class="border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-indigo-300">
+                                                <div class="text-center">
+                                                    <i class="fas fa-user-injured text-2xl mb-2" :class="form.leaveType === 'Sick' ? 'text-indigo-600' : 'text-gray-400'"></i>
+                                                    <div class="font-medium text-sm">Sick Leave</div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="relative">
+                                            <input type="radio" x-model="form.leaveType" value="Vacation" class="sr-only">
+                                            <div :class="form.leaveType === 'Vacation' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'"
+                                                class="border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-indigo-300">
+                                                <div class="text-center">
+                                                    <i class="fas fa-umbrella-beach text-2xl mb-2" :class="form.leaveType === 'Vacation' ? 'text-indigo-600' : 'text-gray-400'"></i>
+                                                    <div class="font-medium text-sm">Vacation</div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="relative">
+                                            <input type="radio" x-model="form.leaveType" value="Personal" class="sr-only">
+                                            <div :class="form.leaveType === 'Personal' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'"
+                                                class="border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-indigo-300">
+                                                <div class="text-center">
+                                                    <i class="fas fa-user text-2xl mb-2" :class="form.leaveType === 'Personal' ? 'text-indigo-600' : 'text-gray-400'"></i>
+                                                    <div class="font-medium text-sm">Personal</div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Date Range -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Start Date *
+                                        </label>
+                                        <input type="date" x-model="form.startDate" required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            End Date *
+                                        </label>
+                                        <input type="date" x-model="form.endDate" required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                </div>
+
+                                <!-- Duration Display -->
+                                <div x-show="form.startDate && form.endDate" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                        <span class="text-blue-800 font-medium">Duration: <span x-text="calculateDuration()"></span> day(s)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Description -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Reason/Description *
+                                    </label>
+                                    <textarea x-model="form.description" rows="4" required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                                        placeholder="Please provide a detailed reason for your leave request..."></textarea>
+                                </div>
+
+                                <!-- Error/Success Messages -->
+                                <div x-show="error" x-text="error" class="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                                <div x-show="success" class="text-green-600 text-sm bg-green-50 p-3 rounded-lg border border-green-200">
+                                    <i class="fas fa-check-circle mr-2"></i>Leave request submitted successfully!
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="flex justify-end space-x-3">
+                                    <button type="button" @click="resetForm()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                        Reset
+                                    </button>
+                                    <button type="submit" :disabled="loading"
+                                        class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span x-show="!loading" class="flex items-center">
+                                            <i class="fas fa-paper-plane mr-2"></i>Submit Request
+                                        </span>
+                                        <span x-show="loading" class="flex items-center">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Submitting...
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="space-y-6">
+                        <!-- Leave Balance -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Your Leave Balance</h3>
+                            <template x-if="leaveBalance === null">
+                                <div class="flex justify-center items-center py-8">
+                                    <i class="fas fa-spinner fa-spin text-2xl text-indigo-600 mr-2"></i>
+                                    <span class="text-gray-500">Loading your leave balance...</span>
+                                </div>
+                            </template>
+                            <template x-if="leaveBalance !== null">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-100">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-user-injured text-red-600 mr-3"></i>
+                                            <div>
+                                                <div class="font-medium text-gray-900">Sick Leave</div>
+                                                <div class="text-xs text-gray-500">Medical appointments</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xl font-bold text-red-600" x-text="leaveBalance?.sick || 0">0</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-100">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-umbrella-beach text-green-600 mr-3"></i>
+                                            <div>
+                                                <div class="font-medium text-gray-900">Vacation</div>
+                                                <div class="text-xs text-gray-500">Holidays, personal time</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xl font-bold text-green-600" x-text="leaveBalance?.vacation || 0">0</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg border border-purple-100">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-user text-purple-600 mr-3"></i>
+                                            <div>
+                                                <div class="font-medium text-gray-900">Personal</div>
+                                                <div class="text-xs text-gray-500">Personal matters</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xl font-bold text-purple-600" x-text="leaveBalance?.personal || 0">0</span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Guidelines -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Leave Guidelines</h3>
+                            <ul class="space-y-3 text-sm text-gray-600">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3 flex-shrink-0"></i>
+                                    Submit requests at least 3 days in advance
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3 flex-shrink-0"></i>
+                                    Provide detailed reason for your request
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3 flex-shrink-0"></i>
+                                    Check your leave balance before applying
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3 flex-shrink-0"></i>
+                                    You'll receive email notification of approval/rejection
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                            <div class="space-y-3">
+                                <a href="my-leaves.html" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-history text-gray-400 mr-3"></i>
+                                    View Leave History
+                                </a>
+                                <a href="employee-notices.html" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-bullhorn text-gray-400 mr-3"></i>
+                                    Check Notices
+                                </a>
+                                <a href="wellness-center.html" class="flex items-center p-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-heart text-gray-400 mr-3"></i>
+                                    Wellness Center
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function leaveRequestApp() {
+            return {
+                user: null,
+                form: {
+                    leaveType: 'Sick',
+                    startDate: '',
+                    endDate: '',
+                    description: ''
+                },
+                leaveBalance: null,
+                loading: false,
+                error: '',
+                success: false,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    this.user = JSON.parse(localStorage.getItem('user') || '{}');
+
+                    // Fetch leave balance
+                    try {
+                        const response = await axios.get('/api/balances');
+                        this.leaveBalance = response.data;
+                    } catch (error) {
+                        console.error('Error fetching balance:', error);
+                    }
+                },
+
+                calculateDuration() {
+                    if (!this.form.startDate || !this.form.endDate) return 0;
+                    const start = new Date(this.form.startDate);
+                    const end = new Date(this.form.endDate);
+                    const diffTime = Math.abs(end - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    return diffDays;
+                },
+
+                resetForm() {
+                    this.form = {
+                        leaveType: 'Sick',
+                        startDate: '',
+                        endDate: '',
+                        description: ''
+                    };
+                    this.error = '';
+                    this.success = false;
+                },
+
+                async submitLeave() {
+                    this.loading = true;
+                    this.error = '';
+                    this.success = false;
+
+                    // Validation
+                    if (new Date(this.form.startDate) < new Date()) {
+                        this.error = 'Start date cannot be in the past';
+                        this.loading = false;
+                        return;
+                    }
+
+                    if (new Date(this.form.endDate) < new Date(this.form.startDate)) {
+                        this.error = 'End date must be after start date';
+                        this.loading = false;
+                        return;
+                    }
+
+                    try {
+                        await axios.post('/api/leaves', this.form);
+                        this.success = true;
+                        this.resetForm();
+                        
+                        // Refresh balance
+                        const response = await axios.get('/api/balances');
+                        this.leaveBalance = response.data;
+
+                        // Auto-hide success message after 3 seconds
+                        setTimeout(() => {
+                            this.success = false;
+                        }, 3000);
+
+                    } catch (error) {
+                        this.error = error.response?.data?.message || 'Error submitting leave request';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

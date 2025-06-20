@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Events - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="wellnessEvents()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.role || 'Administrator'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="admin-dashboard.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-leaves.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Leave Requests</span>
+            </a>
+            <a href="manage-users.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="wellness-articles.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Articles</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-white/20 border-r-4 border-white">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notices</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Leave Balances</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-white/10 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Wellness Events</h1>
+                        <p class="text-gray-600 mt-1">Organize and manage wellness events for your team</p>
+                    </div>
+                    <button @click="showEventModal = true; editing = false; resetForm()" 
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Event
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Events</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.total">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-alt text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Upcoming</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.upcoming">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Registrations</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.totalRegistrations">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">This Month</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.thisMonth">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar text-orange-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <select x-model="selectedCategory" @change="fetchEvents()" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Categories</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Fitness">Fitness</option>
+                            <option value="Mental Health">Mental Health</option>
+                            <option value="Team Building">Team Building</option>
+                            <option value="Seminar">Seminar</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <select x-model="timeFilter" @change="fetchEvents()" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Events</option>
+                            <option value="upcoming">Upcoming Only</option>
+                            <option value="past">Past Events</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" x-model="searchTerm" @input="fetchEvents()" 
+                            placeholder="Search events..."
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button @click="searchTerm = ''; fetchEvents()" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Grid -->
+            <div x-show="loading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
+                <p class="mt-4 text-gray-600">Loading events...</p>
+            </div>
+
+            <div x-show="!loading && events.length === 0" class="text-center py-12">
+                <i class="fas fa-calendar-alt text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No events found</h3>
+                <p class="text-gray-600 mb-4">Create your first wellness event to get started.</p>
+                <button @click="showEventModal = true; editing = false; resetForm()" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create Event
+                </button>
+            </div>
+
+            <div x-show="!loading && events.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="event in events" :key="event._id">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div x-show="event.imageUrl" class="h-48 bg-gray-200">
+                            <img :src="event.imageUrl" :alt="event.title" class="w-full h-full object-cover">
+                        </div>
+                        <div x-show="!event.imageUrl" class="h-48 bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                            <i class="fas fa-calendar-alt text-white text-4xl"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span :class="{
+                                    'px-2 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-blue-100 text-blue-800': event.category === 'Workshop',
+                                    'bg-green-100 text-green-800': event.category === 'Fitness',
+                                    'bg-purple-100 text-purple-800': event.category === 'Mental Health',
+                                    'bg-orange-100 text-orange-800': event.category === 'Team Building',
+                                    'bg-red-100 text-red-800': event.category === 'Seminar',
+                                    'bg-gray-100 text-gray-800': event.category === 'Other'
+                                }" x-text="event.category"></span>
+                                <div class="flex items-center space-x-1 text-sm text-gray-500">
+                                    <i class="fas fa-users"></i>
+                                    <span x-text="event.currentParticipants || 0"></span>
+                                    <span x-show="event.maxParticipants">/ <span x-text="event.maxParticipants"></span></span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2" x-text="event.title"></h3>
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-2" x-text="event.description"></p>
+                            <div class="space-y-2 text-sm text-gray-500 mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar mr-2 w-4"></i>
+                                    <span x-text="new Date(event.date).toLocaleDateString()"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock mr-2 w-4"></i>
+                                    <span x-text="event.startTime + ' - ' + event.endTime"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-map-marker-alt mr-2 w-4"></i>
+                                    <span x-text="event.location"></span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button @click="editEvent(event)" 
+                                    class="flex-1 px-3 py-2 text-sm text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </button>
+                                <button @click="viewRegistrations(event)" 
+                                    class="flex-1 px-3 py-2 text-sm text-green-600 border border-green-300 rounded-lg hover:bg-green-50">
+                                    <i class="fas fa-users mr-1"></i> Registrations
+                                </button>
+                                <button @click="deleteEvent(event)" 
+                                    class="px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </main>
+    </div>
+
+    <!-- Event Modal -->
+    <div x-show="showEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.away="showEventModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold" x-text="editing ? 'Edit Event' : 'Create New Event'"></h3>
+            </div>
+            
+            <form @submit.prevent="saveEvent()" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                        <input type="text" x-model="eventForm.title" required maxlength="200"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                        <select x-model="eventForm.category" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Workshop">Workshop</option>
+                            <option value="Fitness">Fitness</option>
+                            <option value="Mental Health">Mental Health</option>
+                            <option value="Team Building">Team Building</option>
+                            <option value="Seminar">Seminar</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Participants</label>
+                        <input type="number" x-model="eventForm.maxParticipants" min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Leave empty for unlimited">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                        <input type="date" x-model="eventForm.date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+                        <input type="time" x-model="eventForm.startTime" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+                        <input type="time" x-model="eventForm.endTime" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                        <input type="text" x-model="eventForm.location" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                        <input type="url" x-model="eventForm.imageUrl"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                        <textarea x-model="eventForm.description" rows="4" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Describe the event details..."></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" @click="showEventModal = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <span x-text="editing ? 'Update Event' : 'Create Event'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registrations Modal -->
+    <div x-show="showRegistrationsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.away="showRegistrationsModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold">Event Registrations</h3>
+                <p class="text-gray-600 mt-1" x-text="selectedEvent?.title"></p>
+            </div>
+            
+            <div class="p-6">
+                <div x-show="eventRegistrations.length === 0" class="text-center py-8 text-gray-500">
+                    <i class="fas fa-users text-3xl mb-2"></i>
+                    <p>No registrations yet</p>
+                </div>
+                
+                <div x-show="eventRegistrations.length > 0" class="space-y-3">
+                    <template x-for="registration in eventRegistrations" :key="registration.user._id">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                    <span class="text-sm font-medium text-indigo-600" x-text="registration.user.name.charAt(0)"></span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900" x-text="registration.user.name"></p>
+                                    <p class="text-sm text-gray-500" x-text="registration.user.email"></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span :class="{
+                                    'px-2 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-green-100 text-green-800': registration.status === 'Registered',
+                                    'bg-blue-100 text-blue-800': registration.status === 'Attended',
+                                    'bg-red-100 text-red-800': registration.status === 'Cancelled'
+                                }" x-text="registration.status"></span>
+                                <p class="text-xs text-gray-500 mt-1" x-text="new Date(registration.registeredAt).toLocaleDateString()"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4" @click.away="showDeleteModal = false">
+            <h3 class="text-lg font-semibold mb-4">Delete Event</h3>
+            <p class="text-gray-600 mb-4">
+                Are you sure you want to delete "<strong x-text="selectedEvent?.title"></strong>"? This action cannot be undone.
+            </p>
+            <div class="flex justify-end space-x-3">
+                <button @click="showDeleteModal = false" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button @click="confirmDelete()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function wellnessEvents() {
+            return {
+                user: null,
+                events: [],
+                loading: true,
+                selectedCategory: 'all',
+                timeFilter: 'all',
+                searchTerm: '',
+                showEventModal: false,
+                showRegistrationsModal: false,
+                showDeleteModal: false,
+                editing: false,
+                selectedEvent: null,
+                eventRegistrations: [],
+                stats: {
+                    total: 0,
+                    upcoming: 0,
+                    totalRegistrations: 0,
+                    thisMonth: 0
+                },
+                eventForm: {
+                    title: '',
+                    description: '',
+                    category: 'Workshop',
+                    date: '',
+                    startTime: '',
+                    endTime: '',
+                    location: '',
+                    maxParticipants: '',
+                    imageUrl: ''
+                },
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+                        await this.fetchEvents();
+                    } catch (error) {
+                        console.error('Init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchEvents() {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.selectedCategory !== 'all') {
+                            params.append('category', this.selectedCategory);
+                        }
+                        if (this.timeFilter === 'upcoming') {
+                            params.append('upcoming', 'true');
+                        }
+                        if (this.searchTerm) {
+                            params.append('search', this.searchTerm);
+                        }
+                        params.append('limit', '50');
+
+                        const response = await axios.get(`/api/wellness/events?${params}`);
+                        this.events = response.data.events || [];
+                        
+                        // Calculate stats
+                        this.stats.total = this.events.length;
+                        this.stats.upcoming = this.events.filter(e => new Date(e.date) >= new Date()).length;
+                        this.stats.totalRegistrations = this.events.reduce((sum, e) => sum + (e.currentParticipants || 0), 0);
+                        
+                        const thisMonth = new Date();
+                        thisMonth.setDate(1);
+                        this.stats.thisMonth = this.events.filter(e => 
+                            new Date(e.date) >= thisMonth && new Date(e.date) < new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 1)
+                        ).length;
+                    } catch (error) {
+                        console.error('Fetch events error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                resetForm() {
+                    this.eventForm = {
+                        title: '',
+                        description: '',
+                        category: 'Workshop',
+                        date: '',
+                        startTime: '',
+                        endTime: '',
+                        location: '',
+                        maxParticipants: '',
+                        imageUrl: ''
+                    };
+                },
+
+                editEvent(event) {
+                    this.editing = true;
+                    this.selectedEvent = event;
+                    this.eventForm = {
+                        title: event.title,
+                        description: event.description,
+                        category: event.category,
+                        date: new Date(event.date).toISOString().split('T')[0],
+                        startTime: event.startTime,
+                        endTime: event.endTime,
+                        location: event.location,
+                        maxParticipants: event.maxParticipants || '',
+                        imageUrl: event.imageUrl || ''
+                    };
+                    this.showEventModal = true;
+                },
+
+                async saveEvent() {
+                    try {
+                        if (this.editing) {
+                            await axios.put(`/api/wellness/events/${this.selectedEvent._id}`, this.eventForm);
+                        } else {
+                            await axios.post('/api/wellness/events', this.eventForm);
+                        }
+                        
+                        this.showEventModal = false;
+                        await this.fetchEvents();
+                    } catch (error) {
+                        console.error('Save event error:', error);
+                        alert(error.response?.data?.message || 'Error saving event');
+                    }
+                },
+
+                async viewRegistrations(event) {
+                    this.selectedEvent = event;
+                    this.eventRegistrations = event.registrations || [];
+                    this.showRegistrationsModal = true;
+                },
+
+                deleteEvent(event) {
+                    this.selectedEvent = event;
+                    this.showDeleteModal = true;
+                },
+
+                async confirmDelete() {
+                    try {
+                        await axios.delete(`/api/wellness/events/${this.selectedEvent._id}`);
+                        this.showDeleteModal = false;
+                        await this.fetchEvents();
+                    } catch (error) {
+                        console.error('Delete event error:', error);
+                        alert(error.response?.data?.message || 'Error deleting event');
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

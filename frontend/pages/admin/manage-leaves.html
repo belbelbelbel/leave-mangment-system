@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Leave Requests - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gray-100" x-data="manageLeaves">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'admin@company.com'"></p>
+                </div>
+            </div>
+        </div>
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="admin-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Manage Leaves</span>
+            </a>
+            <a href="balance-requests.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-plus-circle w-5 h-5 mr-3"></i>
+                <span>Balance Requests</span>
+            </a>
+            <a href="manage-users.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Adjust Balance</span>
+            </a>
+            <a href="#" @click="logout()" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Manage Leave Requests</h1>
+                <p class="text-gray-600 mt-2">Review and approve/reject employee leave requests</p>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <!-- Status Filter -->
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">Filter by Status:</label>
+                        <select x-model="filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Requests</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="flex items-center space-x-2">
+                        <input type="text" x-model="searchTerm" placeholder="Search by employee name or leave type..."
+                            class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button @click="searchTerm = ''" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="leaves.filter(l => l.status === 'Pending').length">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-check text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Approved</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="leaves.filter(l => l.status === 'Approved').length">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Rejected</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="leaves.filter(l => l.status === 'Rejected').length">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-calendar text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="leaves.length">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leave Requests Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Leave Requests</h2>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="p-8 text-center">
+                    <i class="fas fa-spinner fa-spin text-2xl text-indigo-600"></i>
+                    <p class="mt-2 text-gray-600">Loading leave requests...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && filteredLeaves.length === 0" class="p-8 text-center">
+                    <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No leave requests found</h3>
+                    <p class="text-gray-600">There are no leave requests matching your criteria.</p>
+                </div>
+
+                <!-- Table -->
+                <div x-show="!loading && filteredLeaves.length > 0" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="leave in filteredLeaves" :key="leave._id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                    <span class="text-sm font-medium text-indigo-600" x-text="leave.employeeId?.name?.charAt(0) || 'U'"></span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900" x-text="leave.employeeId?.name || 'Unknown'"></div>
+                                                <div class="text-sm text-gray-500" x-text="leave.employeeId?.email || ''"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                              :class="{
+                                                  'bg-blue-100 text-blue-800': leave.leaveType === 'Sick',
+                                                  'bg-green-100 text-green-800': leave.leaveType === 'Vacation',
+                                                  'bg-purple-100 text-purple-800': leave.leaveType === 'Personal'
+                                              }" x-text="leave.leaveType"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div>
+                                            <div x-text="new Date(leave.startDate).toLocaleDateString()"></div>
+                                            <div class="text-gray-500">to</div>
+                                            <div x-text="new Date(leave.endDate).toLocaleDateString()"></div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 max-w-xs truncate" x-text="leave.description"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                              :class="{
+                                                  'bg-yellow-100 text-yellow-800': leave.status === 'Pending',
+                                                  'bg-green-100 text-green-800': leave.status === 'Approved',
+                                                  'bg-red-100 text-red-800': leave.status === 'Rejected'
+                                              }" x-text="leave.status"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div x-show="leave.status === 'Pending'" class="flex space-x-2">
+                                            <button @click="approveLeave(leave)" class="text-green-600 hover:text-green-900">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button @click="rejectLeave(leave)" class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        </div>
+                                        <div x-show="leave.status !== 'Pending'" class="text-gray-500">
+                                            <span x-text="leave.status === 'Approved' ? 'Approved' : 'Rejected'"></span>
+                                            <div class="text-xs" x-text="leave.approvedAt ? new Date(leave.approvedAt).toLocaleDateString() : ''"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div x-show="showActionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4" @click.away="showActionModal = false">
+            <h3 class="text-lg font-semibold mb-4" x-text="actionType === 'approve' ? 'Approve Leave Request' : 'Reject Leave Request'"></h3>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 mb-2">
+                    <strong x-text="selectedLeave?.employeeId?.name"></strong> - 
+                    <span x-text="selectedLeave?.leaveType"></span> Leave
+                </p>
+                <p class="text-sm text-gray-500">
+                    <span x-text="new Date(selectedLeave?.startDate).toLocaleDateString()"></span> to 
+                    <span x-text="new Date(selectedLeave?.endDate).toLocaleDateString()"></span>
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Reason (Optional)</label>
+                <textarea x-model="actionReason" rows="3" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    :placeholder="actionType === 'approve' ? 'Add approval notes...' : 'Add rejection reason...'"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button @click="showActionModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button @click="confirmAction()" 
+                    :class="{
+                        'px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white': true,
+                        'bg-green-600 hover:bg-green-700': actionType === 'approve',
+                        'bg-red-600 hover:bg-red-700': actionType === 'reject'
+                    }">
+                    <span x-text="actionType === 'approve' ? 'Approve' : 'Reject'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this where you want to show errors -->
+    <div x-show="error" class="p-4 bg-red-100 text-red-700 rounded mb-4" x-text="error"></div>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('manageLeaves', () => ({
+            leaves: [],
+            loading: true,
+            filter: 'all',
+            searchTerm: '',
+            selectedLeave: null,
+            showActionModal: false,
+            actionType: '',
+            actionReason: '',
+            user: {},
+            error: '',
+
+            init() {
+                this.loadData();
+            },
+
+            get filteredLeaves() {
+                let filtered = Array.isArray(this.leaves) ? this.leaves : [];
+                // Filter by status
+                if (this.filter !== 'all') {
+                    filtered = filtered.filter(leave => leave.status === this.filter);
+                }
+                // Filter by search term
+                if (this.searchTerm) {
+                    const term = this.searchTerm.toLowerCase();
+                    filtered = filtered.filter(leave => 
+                        leave.employeeId?.name?.toLowerCase().includes(term) ||
+                        leave.leaveType.toLowerCase().includes(term) ||
+                        leave.description.toLowerCase().includes(term)
+                    );
+                }
+                return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            },
+
+            async loadData() {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    // Load user info
+                    const userResponse = await axios.get('/api/users/me');
+                    const currentUser = userResponse.data;
+                    if (currentUser.role !== 'Admin') {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+                    this.user = currentUser;
+
+                    // Load leave requests
+                    const leavesResponse = await axios.get('/api/leaves/all');
+                    this.leaves = leavesResponse.data;
+                    console.log('Leaves loaded:', this.leaves);
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    this.error = 'Failed to load data.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            approveLeave(leave) {
+                this.selectedLeave = leave;
+                this.actionType = 'approve';
+                this.actionReason = '';
+                this.showActionModal = true;
+            },
+
+            rejectLeave(leave) {
+                this.selectedLeave = leave;
+                this.actionType = 'reject';
+                this.actionReason = '';
+                this.showActionModal = true;
+            },
+
+            async confirmAction() {
+                try {
+                    const status = this.actionType === 'approve' ? 'Approved' : 'Rejected';
+                    
+                    await axios.put(`/api/leaves/${this.selectedLeave._id}`, { 
+                        status, 
+                        reason: this.actionReason 
+                    });
+                    
+                    // Update the leave in the list
+                    const index = this.leaves.findIndex(l => l._id === this.selectedLeave._id);
+                    if (index !== -1) {
+                        this.leaves[index].status = status;
+                        this.leaves[index].approvedAt = new Date().toISOString();
+                        this.leaves[index].reason = this.actionReason;
+                    }
+                    
+                    this.showActionModal = false;
+                    this.selectedLeave = null;
+                } catch (error) {
+                    console.error('Error updating leave:', error);
+                    alert(error.response?.data?.message || 'Error updating leave request');
+                }
+            },
+
+            logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('role');
+                window.location.href = '../auth/login.html';
+            }
+        }));
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Articles - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="wellnessArticles()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.role || 'Administrator'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="admin-dashboard.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-leaves.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Leave Requests</span>
+            </a>
+            <a href="manage-users.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-white/20 border-r-4 border-white">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Articles</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notices</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Leave Balances</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-white/10 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Wellness Articles</h1>
+                        <p class="text-gray-600 mt-1">Create and manage wellness content for your team</p>
+                    </div>
+                    <button @click="showArticleModal = true; editing = false; resetForm()" 
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Article
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Articles</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.total">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-heart text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Published</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.published">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Views</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.totalViews">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-eye text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">This Month</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="stats.thisMonth">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar text-orange-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <select x-model="selectedCategory" @change="fetchArticles()" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Categories</option>
+                            <option value="Mental Health">Mental Health</option>
+                            <option value="Physical Fitness">Physical Fitness</option>
+                            <option value="Nutrition">Nutrition</option>
+                            <option value="Work-Life Balance">Work-Life Balance</option>
+                            <option value="Stress Management">Stress Management</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" x-model="searchTerm" @input="fetchArticles()" 
+                            placeholder="Search articles..."
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button @click="searchTerm = ''; fetchArticles()" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Articles Grid -->
+            <div x-show="loading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
+                <p class="mt-4 text-gray-600">Loading articles...</p>
+            </div>
+
+            <div x-show="!loading && articles.length === 0" class="text-center py-12">
+                <i class="fas fa-heart text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No articles found</h3>
+                <p class="text-gray-600 mb-4">Create your first wellness article to get started.</p>
+                <button @click="showArticleModal = true; editing = false; resetForm()" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create Article
+                </button>
+            </div>
+
+            <div x-show="!loading && articles.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="article in articles" :key="article._id">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div x-show="article.imageUrl" class="h-48 bg-gray-200">
+                            <img :src="article.imageUrl" :alt="article.title" class="w-full h-full object-cover">
+                        </div>
+                        <div x-show="!article.imageUrl" class="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                            <i class="fas fa-heart text-white text-4xl"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span :class="{
+                                    'px-2 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-blue-100 text-blue-800': article.category === 'Mental Health',
+                                    'bg-green-100 text-green-800': article.category === 'Physical Fitness',
+                                    'bg-orange-100 text-orange-800': article.category === 'Nutrition',
+                                    'bg-purple-100 text-purple-800': article.category === 'Work-Life Balance',
+                                    'bg-red-100 text-red-800': article.category === 'Stress Management',
+                                    'bg-gray-100 text-gray-800': article.category === 'General'
+                                }" x-text="article.category"></span>
+                                <div class="flex items-center space-x-1 text-sm text-gray-500">
+                                    <i class="fas fa-eye"></i>
+                                    <span x-text="article.views"></span>
+                                </div>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2" x-text="article.title"></h3>
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-3" x-text="article.excerpt"></p>
+                            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                                <span x-text="article.readTime + ' min read'"></span>
+                                <span x-text="new Date(article.createdAt).toLocaleDateString()"></span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button @click="editArticle(article)" 
+                                    class="flex-1 px-3 py-2 text-sm text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </button>
+                                <button @click="deleteArticle(article)" 
+                                    class="flex-1 px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50">
+                                    <i class="fas fa-trash mr-1"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </main>
+    </div>
+
+    <!-- Article Modal -->
+    <div x-show="showArticleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.away="showArticleModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold" x-text="editing ? 'Edit Article' : 'Create New Article'"></h3>
+            </div>
+            
+            <form @submit.prevent="saveArticle()" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                        <input type="text" x-model="articleForm.title" required maxlength="200"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                        <select x-model="articleForm.category" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Mental Health">Mental Health</option>
+                            <option value="Physical Fitness">Physical Fitness</option>
+                            <option value="Nutrition">Nutrition</option>
+                            <option value="Work-Life Balance">Work-Life Balance</option>
+                            <option value="Stress Management">Stress Management</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Read Time (minutes)</label>
+                        <input type="number" x-model="articleForm.readTime" min="1" max="60"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Article Image</label>
+                        <input type="file" accept="image/*" @change="handleImageUpload($event)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <template x-if="articleForm.imagePreview">
+                            <img :src="articleForm.imagePreview" alt="Preview" class="mt-2 rounded-lg max-h-40">
+                        </template>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Excerpt *</label>
+                        <textarea x-model="articleForm.excerpt" rows="3" required maxlength="300"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Brief summary of the article..."></textarea>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                        <input type="text" x-model="articleForm.tags"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="wellness, health, fitness (comma separated)">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Content *</label>
+                        <textarea x-model="articleForm.content" rows="12" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Write your wellness article content here..."></textarea>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" x-model="articleForm.isPublished" class="mr-2">
+                            <span class="text-sm font-medium text-gray-700">Publish immediately</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" @click="showArticleModal = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <span x-text="editing ? 'Update Article' : 'Create Article'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4" @click.away="showDeleteModal = false">
+            <h3 class="text-lg font-semibold mb-4">Delete Article</h3>
+            <p class="text-gray-600 mb-4">
+                Are you sure you want to delete "<strong x-text="selectedArticle?.title"></strong>"? This action cannot be undone.
+            </p>
+            <div class="flex justify-end space-x-3">
+                <button @click="showDeleteModal = false" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button @click="confirmDelete()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function wellnessArticles() {
+            return {
+                user: null,
+                articles: [],
+                loading: true,
+                selectedCategory: 'all',
+                searchTerm: '',
+                showArticleModal: false,
+                showDeleteModal: false,
+                editing: false,
+                selectedArticle: null,
+                stats: {
+                    total: 0,
+                    published: 0,
+                    totalViews: 0,
+                    thisMonth: 0
+                },
+                articleForm: {
+                    title: '',
+                    content: '',
+                    excerpt: '',
+                    category: 'General',
+                    tags: '',
+                    imageUrl: '',
+                    imagePreview: '',
+                    readTime: 5,
+                    isPublished: true
+                },
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+                        await this.fetchArticles();
+                    } catch (error) {
+                        console.error('Init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchArticles() {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.selectedCategory !== 'all') {
+                            params.append('category', this.selectedCategory);
+                        }
+                        if (this.searchTerm) {
+                            params.append('search', this.searchTerm);
+                        }
+                        params.append('limit', '50');
+
+                        const response = await axios.get(`/api/wellness/articles?${params}`);
+                        this.articles = response.data.articles || [];
+                        
+                        // Calculate stats
+                        this.stats.total = this.articles.length;
+                        this.stats.published = this.articles.filter(a => a.isPublished).length;
+                        this.stats.totalViews = this.articles.reduce((sum, a) => sum + (a.views || 0), 0);
+                        
+                        const thisMonth = new Date();
+                        thisMonth.setDate(1);
+                        this.stats.thisMonth = this.articles.filter(a => 
+                            new Date(a.createdAt) >= thisMonth
+                        ).length;
+                    } catch (error) {
+                        console.error('Fetch articles error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                resetForm() {
+                    this.articleForm = {
+                        title: '',
+                        content: '',
+                        excerpt: '',
+                        category: 'General',
+                        tags: '',
+                        imageUrl: '',
+                        imagePreview: '',
+                        readTime: 5,
+                        isPublished: true
+                    };
+                },
+
+                editArticle(article) {
+                    this.editing = true;
+                    this.selectedArticle = article;
+                    this.articleForm = {
+                        title: article.title,
+                        content: article.content,
+                        excerpt: article.excerpt,
+                        category: article.category,
+                        tags: article.tags ? article.tags.join(', ') : '',
+                        imageUrl: article.imageUrl || '',
+                        imagePreview: article.imageUrl ? `data:image/jpeg;base64,${article.imageUrl}` : '',
+                        readTime: article.readTime,
+                        isPublished: article.isPublished
+                    };
+                    this.showArticleModal = true;
+                },
+
+                async saveArticle() {
+                    try {
+                        if (this.editing) {
+                            await axios.put(`/api/wellness/articles/${this.selectedArticle._id}`, this.articleForm);
+                        } else {
+                            await axios.post('/api/wellness/articles', this.articleForm);
+                        }
+                        
+                        this.showArticleModal = false;
+                        await this.fetchArticles();
+                    } catch (error) {
+                        console.error('Save article error:', error);
+                        alert(error.response?.data?.message || 'Error saving article');
+                    }
+                },
+
+                deleteArticle(article) {
+                    this.selectedArticle = article;
+                    this.showDeleteModal = true;
+                },
+
+                async confirmDelete() {
+                    try {
+                        await axios.delete(`/api/wellness/articles/${this.selectedArticle._id}`);
+                        this.showDeleteModal = false;
+                        await this.fetchArticles();
+                    } catch (error) {
+                        console.error('Delete article error:', error);
+                        alert(error.response?.data?.message || 'Error deleting article');
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                },
+
+                handleImageUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.articleForm.imagePreview = e.target.result;
+                            this.articleForm.imageUrl = e.target.result; // For now, store as base64 (backend should handle file upload in production)
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        this.articleForm.imagePreview = '';
+                        this.articleForm.imageUrl = '';
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

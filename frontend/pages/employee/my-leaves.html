@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Leaves - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .sidebar-bg {
+            background: #1e293b;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="leaveHistoryApp()">
+    <!-- Modern Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'U'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'User'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'employee@company.com'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="employee-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-home w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="leave-request.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-plus w-5 h-5 mr-3"></i>
+                <span>Apply Leave</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-history w-5 h-5 mr-3"></i>
+                <span>Leave History</span>
+            </a>
+            <a href="wellness-center.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Center</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="employee-notices.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen bg-gray-50">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">My Leave History</h1>
+                        <p class="text-gray-600 mt-1">Track all your leave requests and current balances</p>
+                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                            <i class="fas fa-sync-alt mr-2" :class="{ 'fa-spin': autoRefresh }"></i>
+                            <span>Last updated: <span x-text="lastUpdated"></span></span>
+                            <button @click="refreshData()" class="ml-4 text-indigo-600 hover:text-indigo-800">
+                                <i class="fas fa-refresh mr-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button @click="showFilters = !showFilters" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>
+                            Filters
+                        </button>
+                        <a href="leave-request.html" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            New Request
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8">
+            <!-- Real-time Leave Balance Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Sick Leave</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" x-text="balance.sick || 0">0</p>
+                            <p class="text-sm text-gray-500 mt-1">days remaining</p>
+                            <div class="mt-2">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                         :style="`width: ${Math.min((balance.sick / 10) * 100, 100)}%`"></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">of 10 total days</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-user-md text-green-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('Sick')" 
+                                class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 transition-colors">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Vacation Days</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-2" x-text="balance.vacation || 0">0</p>
+                            <p class="text-sm text-gray-500 mt-1">days remaining</p>
+                            <div class="mt-2">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                         :style="`width: ${Math.min((balance.vacation / 15) * 100, 100)}%`"></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">of 15 total days</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-umbrella-beach text-blue-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('Vacation')" 
+                                class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 transition-colors">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Personal Leave</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-2" x-text="balance.personal || 0">0</p>
+                            <p class="text-sm text-gray-500 mt-1">days remaining</p>
+                            <div class="mt-2">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                                         :style="`width: ${Math.min((balance.personal / 5) * 100, 100)}%`"></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">of 5 total days</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-user text-purple-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('Personal')" 
+                                class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 transition-colors">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Panel -->
+            <div x-show="showFilters" x-transition class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status Filter</label>
+                        <select x-model="filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Requests</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" x-model="searchTerm" placeholder="Search requests..."
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <button @click="filter = 'all'; searchTerm = ''" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-times mr-2"></i>
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leave Requests -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Leave Requests</h2>
+                        <span class="text-sm text-gray-500" x-text="`${filteredLeaves.length} requests`"></span>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+                        <i class="fas fa-spinner fa-spin text-2xl text-indigo-600"></i>
+                    </div>
+                    <p class="text-gray-600">Loading your leave requests...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && filteredLeaves.length === 0" class="p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <i class="fas fa-calendar-times text-2xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No leave requests found</h3>
+                    <p class="text-gray-600 mb-6">You haven't submitted any leave requests yet.</p>
+                    <a href="leave-request.html" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Apply for Leave
+                    </a>
+                </div>
+
+                <!-- Leave Requests List -->
+                <div x-show="!loading && filteredLeaves.length > 0" class="divide-y divide-gray-200">
+                    <template x-for="leave in filteredLeaves" :key="leave._id">
+                        <div class="p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-3">
+                                        <div :class="{
+                                            'w-3 h-3 rounded-full': true,
+                                            'bg-yellow-400 pulse-animation': leave.status === 'Pending',
+                                            'bg-green-400': leave.status === 'Approved',
+                                            'bg-red-400': leave.status === 'Rejected'
+                                        }"></div>
+                                        <h3 class="text-lg font-semibold text-gray-900" x-text="leave.leaveType"></h3>
+                                        <span :class="{
+                                            'px-3 py-1 text-xs font-medium rounded-full': true,
+                                            'bg-yellow-100 text-yellow-800': leave.status === 'Pending',
+                                            'bg-green-100 text-green-800': leave.status === 'Approved',
+                                            'bg-red-100 text-red-800': leave.status === 'Rejected'
+                                        }" x-text="leave.status"></span>
+                                        <!-- Days Badge -->
+                                        <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                            <span x-text="calculateLeaveDays(leave.startDate, leave.endDate)"></span> days
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="text-gray-600 mb-4" x-text="leave.description"></p>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                        <div class="flex items-center text-gray-500">
+                                            <i class="fas fa-calendar-alt mr-2 text-indigo-500"></i>
+                                            <span>
+                                                <span x-text="formatDate(leave.startDate)"></span> - 
+                                                <span x-text="formatDate(leave.endDate)"></span>
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center text-gray-500">
+                                            <i class="fas fa-clock mr-2 text-indigo-500"></i>
+                                            <span>Applied on <span x-text="formatDate(leave.createdAt)"></span></span>
+                                        </div>
+                                        <div x-show="leave.status !== 'Pending'" class="flex items-center text-gray-500">
+                                            <i class="fas fa-check-circle mr-2 text-indigo-500"></i>
+                                            <span x-text="leave.status + (leave.approvedAt ? ' on ' + formatDate(leave.approvedAt) : '')"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Balance Impact -->
+                                    <div x-show="leave.status === 'Approved'" class="mt-3 p-3 bg-green-50 rounded-lg">
+                                        <div class="flex items-center text-sm text-green-700">
+                                            <i class="fas fa-minus-circle mr-2"></i>
+                                            <span>
+                                                <span x-text="calculateLeaveDays(leave.startDate, leave.endDate)"></span> 
+                                                <span x-text="leave.leaveType.toLowerCase()"></span> days deducted from your balance
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ml-6">
+                                    <div :class="{
+                                        'w-12 h-12 rounded-lg flex items-center justify-center': true,
+                                        'bg-yellow-100 text-yellow-600': leave.status === 'Pending',
+                                        'bg-green-100 text-green-600': leave.status === 'Approved',
+                                        'bg-red-100 text-red-600': leave.status === 'Rejected'
+                                    }">
+                                        <i :class="{
+                                            'fas text-lg': true,
+                                            'fa-clock': leave.status === 'Pending',
+                                            'fa-check': leave.status === 'Approved',
+                                            'fa-times': leave.status === 'Rejected'
+                                        }"></i>
+                                    </div>
+                                    <!-- Days count -->
+                                    <div class="text-center mt-2">
+                                        <span class="text-xs font-medium text-gray-600" x-text="calculateLeaveDays(leave.startDate, leave.endDate) + ' days'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Requests</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1" x-text="leaves.length">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-list text-gray-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Pending</p>
+                            <p class="text-2xl font-bold text-yellow-600 mt-1" x-text="leaves.filter(l => l.status === 'Pending').length">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-yellow-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Approved</p>
+                            <p class="text-2xl font-bold text-green-600 mt-1" x-text="leaves.filter(l => l.status === 'Approved').length">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Days Used</p>
+                            <p class="text-2xl font-bold text-indigo-600 mt-1" x-text="totalDaysUsed">0</p>
+                        </div>
+                        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-check text-indigo-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Request Modal -->
+    <div x-show="showBalanceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-md w-full mx-4" @click.away="showBalanceModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold">Request More Leave Days</h3>
+                <p class="text-gray-600 text-sm mt-1">Request additional <span x-text="balanceRequestType"></span> days</p>
+            </div>
+            
+            <form @submit.prevent="submitBalanceRequest()" class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">How many additional days do you need? *</label>
+                        <input type="number" x-model="balanceRequestForm.requestedAmount" min="1" max="30" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason for request *</label>
+                        <textarea x-model="balanceRequestForm.reason" rows="3" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Please explain why you need additional leave days..."></textarea>
+                    </div>
+                </div>
+
+                <div x-show="balanceRequestError" x-text="balanceRequestError" class="mt-4 text-red-500 text-sm"></div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" @click="showBalanceModal = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="balanceRequestLoading"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                        <span x-show="!balanceRequestLoading">Submit Request</span>
+                        <span x-show="balanceRequestLoading">Submitting...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function leaveHistoryApp() {
+            return {
+                leaves: [],
+                balance: { sick: 0, vacation: 0, personal: 0 },
+                loading: true,
+                filter: 'all',
+                searchTerm: '',
+                showFilters: false,
+                user: {},
+                lastUpdated: '',
+                autoRefresh: false,
+                showBalanceModal: false,
+                balanceRequestType: '',
+                balanceRequestForm: {
+                    requestedAmount: '',
+                    reason: ''
+                },
+                balanceRequestError: '',
+                balanceRequestLoading: false,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    await this.fetchData();
+                    await this.fetchUser();
+                    
+                    // Auto-refresh every 30 seconds
+                    setInterval(() => {
+                        this.refreshData();
+                    }, 30000);
+                },
+
+                async fetchData() {
+                    try {
+                        this.loading = true;
+                        
+                        // Use the same endpoint as dashboard but get ALL requests (no slicing)
+                        const [leavesResponse, balanceResponse] = await Promise.all([
+                            axios.get('/api/leaves'), // Get ALL requests, not just recent
+                            axios.get('/api/balances')
+                        ]);
+                        
+                        this.leaves = leavesResponse.data; // Show ALL requests in history
+                        this.balance = balanceResponse.data;
+                        this.lastUpdated = new Date().toLocaleTimeString();
+                        
+                        console.log('✅ Fetched ALL leaves for history:', this.leaves.length);
+                        console.log('✅ Current balance:', this.balance);
+                        
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        if (error.response?.status === 401) {
+                            window.location.href = '../auth/login.html';
+                        }
+                        
+                        // Fallback to basic balance endpoint
+                        try {
+                            const fallbackResponse = await axios.get('/api/balances');
+                            this.balance = fallbackResponse.data;
+                        } catch (fallbackError) {
+                            console.error('Fallback balance fetch error:', fallbackError);
+                        }
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async fetchUser() {
+                    try {
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+                    } catch (error) {
+                        console.error('Error fetching user:', error);
+                    }
+                },
+
+                async refreshData() {
+                    this.autoRefresh = true;
+                    await this.fetchData();
+                    setTimeout(() => {
+                        this.autoRefresh = false;
+                    }, 1000);
+                },
+
+                calculateLeaveDays(startDate, endDate) {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const timeDiff = end.getTime() - start.getTime();
+                    return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                },
+
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+
+                get filteredLeaves() {
+                    let filtered = this.leaves;
+                    
+                    if (this.filter !== 'all') {
+                        filtered = filtered.filter(leave => leave.status === this.filter);
+                    }
+                    
+                    if (this.searchTerm) {
+                        const term = this.searchTerm.toLowerCase();
+                        filtered = filtered.filter(leave => 
+                            leave.leaveType.toLowerCase().includes(term) ||
+                            leave.description.toLowerCase().includes(term)
+                        );
+                    }
+                    
+                    return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                },
+
+                get totalDaysUsed() {
+                    return this.leaves
+                        .filter(leave => leave.status === 'Approved')
+                        .reduce((total, leave) => {
+                            return total + this.calculateLeaveDays(leave.startDate, leave.endDate);
+                        }, 0);
+                },
+
+                requestBalanceIncrease(leaveType) {
+                    this.balanceRequestType = leaveType.toLowerCase();
+                    this.balanceRequestForm = {
+                        requestedAmount: '',
+                        reason: ''
+                    };
+                    this.balanceRequestError = '';
+                    this.showBalanceModal = true;
+                },
+
+                async submitBalanceRequest() {
+                    this.balanceRequestLoading = true;
+                    this.balanceRequestError = '';
+
+                    try {
+                        await axios.post('/api/balances/request-increase', {
+                            leaveType: this.balanceRequestType.charAt(0).toUpperCase() + this.balanceRequestType.slice(1),
+                            requestedAmount: parseInt(this.balanceRequestForm.requestedAmount),
+                            reason: this.balanceRequestForm.reason
+                        });
+                        
+                        this.showBalanceModal = false;
+                        alert('Balance increase request submitted successfully! Admin will review your request.');
+                        
+                        // Refresh data to show any updates
+                        await this.refreshData();
+                        
+                    } catch (error) {
+                        this.balanceRequestError = error.response?.data?.message || 'Error submitting request';
+                    } finally {
+                        this.balanceRequestLoading = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

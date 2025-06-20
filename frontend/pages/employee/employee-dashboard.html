@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="employeeDashboard()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'U'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'User'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'employee@company.com'"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-home w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="leave-request.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-plus w-5 h-5 mr-3"></i>
+                <span>Apply Leave</span>
+            </a>
+            <a href="my-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-history w-5 h-5 mr-3"></i>
+                <span>Leave History</span>
+            </a>
+            <a href="wellness-center.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Center</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+                <span x-show="upcomingEvents > 0" class="ml-auto bg-red-500 text-xs px-2 py-1 rounded-full" x-text="upcomingEvents"></span>
+            </a>
+            <a href="employee-notices.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+        </nav>
+
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            Good <span x-text="getTimeOfDay()"></span>, <span x-text="user?.name?.split(' ')[0] || 'there'"></span>!
+                        </h1>
+                        <p class="text-gray-600 mt-1">Here's your dashboard overview for today.</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Today</p>
+                            <p class="font-semibold" x-text="new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })"></p>
+                        </div>
+                        <button @click="showQuickLeaveModal = true" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Quick Leave
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-8">
+            <!-- Leave Balance Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Sick Leave</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="leaveBalance?.sick || 0">0</p>
+                            <p class="text-sm text-blue-600 mt-1">
+                                <i class="fas fa-bed mr-1"></i>
+                                Days Available
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-bed text-blue-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('sick')" 
+                                class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-green-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Vacation</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="leaveBalance?.vacation || 0">0</p>
+                            <p class="text-sm text-green-600 mt-1">
+                                <i class="fas fa-umbrella-beach mr-1"></i>
+                                Days Available
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-umbrella-beach text-green-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('vacation')" 
+                                class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-purple-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Personal</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="leaveBalance?.personal || 0">0</p>
+                            <p class="text-sm text-purple-600 mt-1">
+                                <i class="fas fa-user mr-1"></i>
+                                Days Available
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
+                                <i class="fas fa-user text-purple-600 text-xl"></i>
+                            </div>
+                            <button @click="requestBalanceIncrease('personal')" 
+                                class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100">
+                                Request More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Recent Leave Requests -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Recent Leave Requests</h3>
+                        <a href="my-leaves.html" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View All</a>
+                    </div>
+                    <div class="space-y-4">
+                        <template x-for="leave in recentLeaves" :key="leave._id">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <div :class="{
+                                        'w-3 h-3 rounded-full': true,
+                                        'bg-orange-400': leave.status === 'Pending',
+                                        'bg-green-400': leave.status === 'Approved',
+                                        'bg-red-400': leave.status === 'Rejected'
+                                    }"></div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" x-text="leave.leaveType"></p>
+                                        <p class="text-sm text-gray-500">
+                                            <span x-text="new Date(leave.startDate).toLocaleDateString()"></span> - 
+                                            <span x-text="new Date(leave.endDate).toLocaleDateString()"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <span :class="{
+                                    'px-3 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-orange-100 text-orange-800': leave.status === 'Pending',
+                                    'bg-green-100 text-green-800': leave.status === 'Approved',
+                                    'bg-red-100 text-red-800': leave.status === 'Rejected'
+                                }" x-text="leave.status"></span>
+                            </div>
+                        </template>
+                        <div x-show="recentLeaves.length === 0" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-calendar-times text-3xl mb-2"></i>
+                            <p class="mb-2">No recent leave requests</p>
+                            <button @click="showQuickLeaveModal = true" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                Apply for leave now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="leave-request.html" class="flex items-center p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors group">
+                            <i class="fas fa-calendar-plus text-indigo-600 mr-3 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-medium">Apply for Leave</span>
+                        </a>
+                        <a href="wellness-center.html" class="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group">
+                            <i class="fas fa-heart text-green-600 mr-3 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-medium">Wellness Articles</span>
+                        </a>
+                        <a href="wellness-events.html" class="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group">
+                            <i class="fas fa-calendar-alt text-blue-600 mr-3 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-medium">Wellness Events</span>
+                            <span x-show="upcomingEvents > 0" class="ml-auto bg-blue-600 text-white text-xs px-2 py-1 rounded-full" x-text="upcomingEvents"></span>
+                        </a>
+                        <a href="employee-notices.html" class="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group">
+                            <i class="fas fa-bullhorn text-purple-600 mr-3 group-hover:scale-110 transition-transform"></i>
+                            <span class="font-medium">Company Notices</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wellness and Notices Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Latest Wellness Articles -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Latest Wellness Articles</h3>
+                        <a href="wellness-center.html" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View All</a>
+                    </div>
+                    <div class="space-y-4">
+                        <template x-for="article in wellnessArticles" :key="article._id">
+                            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                                 @click="window.location.href = 'wellness-center.html'">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-heart text-green-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-medium text-gray-900 truncate" x-text="article.title"></h4>
+                                    <p class="text-sm text-gray-600 line-clamp-2" x-text="article.excerpt"></p>
+                                    <div class="flex items-center mt-2 text-xs text-gray-500">
+                                        <span x-text="article.category"></span>
+                                        <span class="mx-2">•</span>
+                                        <span x-text="article.readTime + ' min read'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="wellnessArticles.length === 0" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-heart text-3xl mb-2"></i>
+                            <p>No wellness articles available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Notices -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Recent Notices</h3>
+                        <a href="employee-notices.html" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View All</a>
+                    </div>
+                    <div class="space-y-4">
+                        <template x-for="notice in notices" :key="notice._id">
+                            <div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                                 @click="window.location.href = 'employee-notices.html'">
+                                <h4 class="font-medium text-gray-900 mb-2" x-text="notice.title"></h4>
+                                <p class="text-sm text-gray-600 line-clamp-2" x-text="notice.content"></p>
+                                <p class="text-xs text-gray-500 mt-2" x-text="new Date(notice.postedDate).toLocaleDateString()"></p>
+                            </div>
+                        </template>
+                        <div x-show="notices.length === 0" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-bullhorn text-3xl mb-2"></i>
+                            <p>No recent notices</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Wellness Events -->
+            <div x-show="upcomingWellnessEvents.length > 0" class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Upcoming Wellness Events</h3>
+                    <a href="wellness-events.html" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View All</a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <template x-for="event in upcomingWellnessEvents" :key="event._id">
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                             @click="window.location.href = 'wellness-events.html'">
+                            <div class="flex items-center justify-between mb-2">
+                                <span :class="{
+                                    'px-2 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-blue-100 text-blue-800': event.category === 'Workshop',
+                                    'bg-green-100 text-green-800': event.category === 'Fitness',
+                                    'bg-purple-100 text-purple-800': event.category === 'Mental Health',
+                                    'bg-orange-100 text-orange-800': event.category === 'Team Building'
+                                }" x-text="event.category"></span>
+                                <span class="text-xs text-gray-500" x-text="new Date(event.date).toLocaleDateString()"></span>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-2" x-text="event.title"></h4>
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-2" x-text="event.description"></p>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span x-text="event.startTime"></span>
+                                </span>
+                                <span class="text-indigo-600 font-medium">
+                                    <span x-text="event.currentParticipants || 0"></span> registered
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Quick Leave Modal -->
+    <div x-show="showQuickLeaveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-md w-full mx-4" @click.away="showQuickLeaveModal = false">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold">Quick Leave Request</h3>
+                <p class="text-gray-600 text-sm mt-1">Submit a leave request quickly</p>
+            </div>
+            
+            <form @submit.prevent="submitQuickLeave()" class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Leave Type *</label>
+                        <select x-model="quickLeaveForm.leaveType" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Sick">Sick Leave</option>
+                            <option value="Vacation">Vacation</option>
+                            <option value="Personal">Personal Leave</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                            <input type="date" x-model="quickLeaveForm.startDate" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
+                            <input type="date" x-model="quickLeaveForm.endDate" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason *</label>
+                        <textarea x-model="quickLeaveForm.description" rows="3" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Please provide a reason for your leave..."></textarea>
+                    </div>
+                </div>
+
+                <div x-show="quickLeaveError" x-text="quickLeaveError" class="mt-4 text-red-500 text-sm"></div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" @click="showQuickLeaveModal = false" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="quickLeaveLoading"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                        <span x-show="!quickLeaveLoading">Submit Request</span>
+                        <span x-show="quickLeaveLoading">Submitting...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function employeeDashboard() {
+            return {
+                user: null,
+                leaveBalance: {
+                    sick: 0,
+                    vacation: 0,
+                    personal: 0
+                },
+                recentLeaves: [],
+                wellnessArticles: [],
+                notices: [],
+                upcomingWellnessEvents: [],
+                upcomingEvents: 0,
+                showQuickLeaveModal: false,
+                quickLeaveForm: {
+                    leaveType: 'Sick',
+                    startDate: '',
+                    endDate: '',
+                    description: ''
+                },
+                quickLeaveError: '',
+                quickLeaveLoading: false,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        // Fetch user info first
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+
+                        // Fetch all dashboard data
+                        await Promise.all([
+                            this.fetchLeaveBalance(),
+                            this.fetchRecentLeaves(),
+                            this.fetchWellnessArticles(),
+                            this.fetchNotices(),
+                            this.fetchUpcomingEvents()
+                        ]);
+                    } catch (error) {
+                        console.error('Dashboard init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchLeaveBalance() {
+                    try {
+                        const response = await axios.get('/api/balances');
+                        console.log('✅ Balance API Response:', response.data);
+                        console.log('✅ Setting balance to:', response.data);
+                        this.leaveBalance = response.data;
+                        console.log('✅ Fetched balance:', this.leaveBalance);
+                    } catch (error) {
+                        console.error('❌ Balance fetch failed:', error.response?.data || error.message);
+                        console.error('Fetch leave balance error:', error);
+                    }
+                },
+
+                async fetchRecentLeaves() {
+                    try {
+                        const response = await axios.get('/api/leaves');
+                        // Slice to show only recent 5 requests on dashboard
+                        this.recentLeaves = response.data.slice(0, 5);
+                        console.log('✅ Fetched recent leaves:', this.recentLeaves.length);
+                    } catch (error) {
+                        console.error('Fetch recent leaves error:', error);
+                    }
+                },
+
+                async fetchWellnessArticles() {
+                    try {
+                        const response = await axios.get('/api/wellness/articles?limit=3');
+                        this.wellnessArticles = response.data.articles || [];
+                    } catch (error) {
+                        console.error('Fetch wellness articles error:', error);
+                    }
+                },
+
+                async fetchNotices() {
+                    try {
+                        const response = await axios.get('/api/notices?limit=3');
+                        this.notices = response.data;
+                    } catch (error) {
+                        console.error('Fetch notices error:', error);
+                    }
+                },
+
+                async fetchUpcomingEvents() {
+                    try {
+                        const response = await axios.get('/api/wellness/events?upcoming=true&limit=3');
+                        this.upcomingWellnessEvents = response.data.events || [];
+                        this.upcomingEvents = response.data.total || 0;
+                    } catch (error) {
+                        console.error('Fetch upcoming events error:', error);
+                    }
+                },
+
+                async submitQuickLeave() {
+                    this.quickLeaveLoading = true;
+                    this.quickLeaveError = '';
+
+                    // Validate dates
+                    if (new Date(this.quickLeaveForm.startDate) < new Date()) {
+                        this.quickLeaveError = 'Start date cannot be in the past';
+                        this.quickLeaveLoading = false;
+                        return;
+                    }
+
+                    if (new Date(this.quickLeaveForm.endDate) < new Date(this.quickLeaveForm.startDate)) {
+                        this.quickLeaveError = 'End date must be after start date';
+                        this.quickLeaveLoading = false;
+                        return;
+                    }
+
+                    try {
+                        await axios.post('/api/leaves', this.quickLeaveForm);
+                        
+                        // Reset form and close modal
+                        this.quickLeaveForm = {
+                            leaveType: 'Sick',
+                            startDate: '',
+                            endDate: '',
+                            description: ''
+                        };
+                        this.showQuickLeaveModal = false;
+                        
+                        // Refresh recent leaves to show the new request
+                        await this.fetchRecentLeaves();
+                        
+                        // Show success message
+                        alert('Leave request submitted successfully!');
+                    } catch (error) {
+                        this.quickLeaveError = error.response?.data?.message || 'Error submitting leave request';
+                    } finally {
+                        this.quickLeaveLoading = false;
+                    }
+                },
+
+                getTimeOfDay() {
+                    const hour = new Date().getHours();
+                    if (hour < 12) return 'morning';
+                    if (hour < 17) return 'afternoon';
+                    return 'evening';
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('user');
+                    window.location.href = '../auth/login.html';
+                },
+
+                async requestBalanceIncrease(leaveType) {
+                    const reason = prompt(`Why do you need more ${leaveType} days?`);
+                    if (!reason) return;
+                    
+                    const amount = prompt(`How many additional ${leaveType} days do you need?`);
+                    if (!amount || isNaN(amount) || amount <= 0) {
+                        alert('Please enter a valid number of days');
+                        return;
+                    }
+                    
+                    try {
+                        await axios.post('/api/balances/request-increase', {
+                            leaveType: leaveType.charAt(0).toUpperCase() + leaveType.slice(1),
+                            requestedAmount: parseInt(amount),
+                            reason: reason
+                        });
+                        
+                        alert('Balance increase request submitted successfully!');
+                    } catch (error) {
+                        alert('Error submitting request: ' + (error.response?.data?.message || 'Unknown error'));
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

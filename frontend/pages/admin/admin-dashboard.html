@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Leave Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="adminDashboard()">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'admin@company.com'"></p>
+                </div>
+            </div>
+        </div>
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Leave Requests</span>
+                <span x-show="stats.pending > 0" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" x-text="stats.pending"></span>
+            </a>
+            <a href="balance-requests.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-plus-circle w-5 h-5 mr-3"></i>
+                <span>Balance Requests</span>
+                <span x-show="balanceRequestsCount > 0" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" x-text="balanceRequestsCount"></span>
+            </a>
+            <a href="manage-users.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="wellness-articles.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-heart w-5 h-5 mr-3"></i>
+                <span>Wellness Articles</span>
+            </a>
+            <a href="wellness-events.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i>
+                <span>Wellness Events</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notices</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Leave Balances</span>
+            </a>
+        </nav>
+        <!-- Logout -->
+        <div class="absolute bottom-0 w-full p-6">
+            <button @click="logout()" class="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt w-4 h-4 mr-3"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                        <p class="text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Today</p>
+                            <p class="font-semibold" x-text="new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Pending Leaves -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Pending Leaves</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.pending">0</p>
+                            <p class="text-sm text-orange-600 mt-1">
+                                <i class="fas fa-clock mr-1"></i>
+                                Needs Review
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approved Leaves -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Approved Leaves</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.approved">0</p>
+                            <p class="text-sm text-green-600 mt-1">
+                                <i class="fas fa-check mr-1"></i>
+                                This Month
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Users -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Users</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.totalUsers">0</p>
+                            <p class="text-sm text-blue-600 mt-1">
+                                <i class="fas fa-users mr-1"></i>
+                                Active Employees
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wellness Events -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Upcoming Events</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.upcomingEvents">0</p>
+                            <p class="text-sm text-purple-600 mt-1">
+                                <i class="fas fa-calendar mr-1"></i>
+                                This Month
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Recent Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Leave Status Chart -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Leave Status Distribution</h3>
+                        <div class="flex space-x-2">
+                            <div class="w-3 h-3 bg-orange-400 rounded-full"></div>
+                            <span class="text-sm text-gray-600">Pending</span>
+                            <div class="w-3 h-3 bg-green-400 rounded-full ml-4"></div>
+                            <span class="text-sm text-gray-600">Approved</span>
+                            <div class="w-3 h-3 bg-red-400 rounded-full ml-4"></div>
+                            <span class="text-sm text-gray-600">Rejected</span>
+                        </div>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="leaveChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Leave Requests -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Recent Leave Requests</h3>
+                        <a href="manage-leaves.html" class="text-sm text-indigo-600 hover:text-indigo-800">View All</a>
+                    </div>
+                    <div class="space-y-4">
+                        <template x-for="leave in recentLeaves.slice(0, 3)" :key="leave._id">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium text-indigo-600" x-text="leave.employeeId?.name?.charAt(0) || 'U'"></span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" x-text="leave.employeeId?.name || 'Unknown'"></p>
+                                        <p class="text-sm text-gray-500">
+                                            <span x-text="leave.leaveType"></span> • 
+                                            <span x-text="new Date(leave.startDate).toLocaleDateString()"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <span :class="{
+                                    'px-3 py-1 text-xs font-medium rounded-full': true,
+                                    'bg-orange-100 text-orange-800': leave.status === 'Pending',
+                                    'bg-green-100 text-green-800': leave.status === 'Approved',
+                                    'bg-red-100 text-red-800': leave.status === 'Rejected'
+                                }" x-text="leave.status"></span>
+                            </div>
+                        </template>
+                        <div x-show="recentLeaves.length === 0" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-calendar-times text-3xl mb-2"></i>
+                            <p>No recent leave requests</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions and Wellness Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="manage-leaves.html" class="flex items-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                            <i class="fas fa-clock text-orange-600 mr-3"></i>
+                            <span class="font-medium">Review Pending Leaves</span>
+                            <span x-show="stats.pending > 0" class="ml-auto bg-orange-600 text-white text-xs px-2 py-1 rounded-full" x-text="stats.pending"></span>
+                        </a>
+                        <a href="wellness-articles.html" class="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                            <i class="fas fa-plus text-green-600 mr-3"></i>
+                            <span class="font-medium">Create Wellness Article</span>
+                        </a>
+                        <a href="wellness-events.html" class="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i class="fas fa-calendar-plus text-blue-600 mr-3"></i>
+                            <span class="font-medium">Schedule Wellness Event</span>
+                        </a>
+                        <a href="notice-board.html" class="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                            <i class="fas fa-bullhorn text-purple-600 mr-3"></i>
+                            <span class="font-medium">Post Announcement</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Wellness Overview -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Wellness Overview</h3>
+                        <div class="flex space-x-4">
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-green-600" x-text="wellnessStats.articles">0</p>
+                                <p class="text-sm text-gray-600">Articles</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-blue-600" x-text="wellnessStats.events">0</p>
+                                <p class="text-sm text-gray-600">Events</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-purple-600" x-text="wellnessStats.registrations">0</p>
+                                <p class="text-sm text-gray-600">Registrations</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Wellness Activity -->
+                    <div class="space-y-3">
+                        <template x-for="activity in recentWellnessActivity" :key="activity.id">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div :class="{
+                                        'w-8 h-8 rounded-full flex items-center justify-center text-sm': true,
+                                        'bg-green-100 text-green-600': activity.type === 'article',
+                                        'bg-blue-100 text-blue-600': activity.type === 'event'
+                                    }">
+                                        <i :class="activity.type === 'article' ? 'fas fa-heart' : 'fas fa-calendar'"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" x-text="activity.title"></p>
+                                        <p class="text-sm text-gray-500" x-text="activity.description"></p>
+                                    </div>
+                                </div>
+                                <span class="text-sm text-gray-400" x-text="activity.date"></span>
+                            </div>
+                        </template>
+                        <div x-show="recentWellnessActivity.length === 0" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-heart text-3xl mb-2"></i>
+                            <p>No recent wellness activity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function adminDashboard() {
+            return {
+                user: null,
+                stats: {
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0,
+                    totalUsers: 0,
+                    upcomingEvents: 0
+                },
+                wellnessStats: {
+                    articles: 0,
+                    events: 0,
+                    registrations: 0
+                },
+                recentLeaves: [],
+                recentWellnessActivity: [],
+                leaveChart: null,
+                balanceRequestsCount: 0,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        // Fetch user info
+                        const userResponse = await axios.get('/api/users/me');
+                        this.user = userResponse.data;
+
+                        // Fetch dashboard stats
+                        await this.fetchStats();
+                        await this.fetchRecentLeaves();
+                        await this.fetchWellnessStats();
+                        
+                        // Initialize chart
+                        this.initChart();
+                    } catch (error) {
+                        console.error('Dashboard init error:', error);
+                        window.location.href = '../auth/login.html';
+                    }
+                },
+
+                async fetchStats() {
+                    try {
+                        const response = await axios.get('/api/admin/stats');
+                        this.stats = response.data;
+                        
+                        // Fetch balance requests count
+                        try {
+                            const balanceResponse = await axios.get('/api/balances/requests');
+                            this.balanceRequestsCount = balanceResponse.data.filter(r => r.status === 'Pending').length;
+                        } catch (error) {
+                            console.log('Balance requests endpoint not available yet');
+                        }
+                    } catch (error) {
+                        console.error('Fetch stats error:', error);
+                    }
+                },
+
+                async fetchRecentLeaves() {
+                    try {
+                        const response = await axios.get('/api/leaves/all?limit=5');
+                        this.recentLeaves = response.data;
+                    } catch (error) {
+                        console.error('Fetch recent leaves error:', error);
+                    }
+                },
+
+                async fetchWellnessStats() {
+                    try {
+                        // Fetch wellness articles count
+                        const articlesResponse = await axios.get('/api/wellness/articles?limit=1');
+                        this.wellnessStats.articles = articlesResponse.data.total || 0;
+
+                        // Fetch wellness events count
+                        const eventsResponse = await axios.get('/api/wellness/events?limit=1');
+                        this.wellnessStats.events = eventsResponse.data.total || 0;
+
+                        // Calculate total registrations
+                        const allEventsResponse = await axios.get('/api/wellness/events');
+                        this.wellnessStats.registrations = allEventsResponse.data.events?.reduce((total, event) => {
+                            return total + (event.currentParticipants || 0);
+                        }, 0) || 0;
+
+                        // Set upcoming events count
+                        const upcomingEventsResponse = await axios.get('/api/wellness/events?upcoming=true');
+                        this.stats.upcomingEvents = upcomingEventsResponse.data.total || 0;
+
+                        // Create recent wellness activity
+                        this.recentWellnessActivity = [
+                            ...articlesResponse.data.articles?.slice(0, 3).map(article => ({
+                                id: article._id,
+                                type: 'article',
+                                title: article.title,
+                                description: `New wellness article published`,
+                                date: new Date(article.createdAt).toLocaleDateString()
+                            })) || [],
+                            ...allEventsResponse.data.events?.slice(0, 2).map(event => ({
+                                id: event._id,
+                                type: 'event',
+                                title: event.title,
+                                description: `${event.currentParticipants || 0} registrations`,
+                                date: new Date(event.date).toLocaleDateString()
+                            })) || []
+                        ].slice(0, 3);
+                    } catch (error) {
+                        console.error('Fetch wellness stats error:', error);
+                    }
+                },
+
+                initChart() {
+                    const ctx = document.getElementById('leaveChart').getContext('2d');
+                    
+                    if (this.leaveChart) {
+                        this.leaveChart.destroy();
+                    }
+
+                    this.leaveChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Pending', 'Approved', 'Rejected'],
+                            datasets: [{
+                                data: [this.stats.pending, this.stats.approved, this.stats.rejected],
+                                backgroundColor: ['#fb923c', '#34d399', '#f87171'],
+                                borderWidth: 0,
+                                cutout: '70%'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

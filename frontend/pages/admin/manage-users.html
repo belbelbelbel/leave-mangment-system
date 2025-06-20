@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-bg {
+            background: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-gray-100" x-data="manageUsers">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 sidebar-bg text-white shadow-xl z-50">
+        <!-- Profile Section -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-semibold" x-text="user?.name?.charAt(0) || 'A'"></span>
+                </div>
+                <div>
+                    <h3 class="font-semibold" x-text="user?.name || 'Admin'"></h3>
+                    <p class="text-sm text-gray-300" x-text="user?.email || 'admin@company.com'"></p>
+                </div>
+            </div>
+        </div>
+        <!-- Navigation -->
+        <nav class="mt-6">
+            <a href="admin-dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-leaves.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-calendar-check w-5 h-5 mr-3"></i>
+                <span>Manage Leaves</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 bg-indigo-600 border-r-4 border-indigo-400">
+                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="notice-board.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-bullhorn w-5 h-5 mr-3"></i>
+                <span>Notice Board</span>
+            </a>
+            <a href="adjust-balance.html" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                <span>Adjust Balance</span>
+            </a>
+            <a href="#" @click="logout()" class="flex items-center px-6 py-3 hover:bg-gray-700 transition-colors">
+                <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8 flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Manage Users</h1>
+                    <p class="text-gray-600 mt-2">View and manage all system users</p>
+                </div>
+                <button @click="addUser()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                    <i class="fas fa-plus mr-2"></i> Add User
+                </button>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <!-- Role Filter -->
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">Filter by Role:</label>
+                        <select x-model="filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">All Users</option>
+                            <option value="Employee">Employees</option>
+                            <option value="Admin">Admins</option>
+                        </select>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="flex items-center space-x-2">
+                        <input type="text" x-model="searchTerm" placeholder="Search by name or email..."
+                            class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button @click="searchTerm = ''" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Users</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="users.length">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Employees</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="users.filter(u => u.role === 'Employee').length">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <i class="fas fa-user-shield text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Admins</p>
+                            <p class="text-2xl font-semibold text-gray-900" x-text="users.filter(u => u.role === 'Admin').length">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Users</h2>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="p-8 text-center">
+                    <i class="fas fa-spinner fa-spin text-2xl text-indigo-600"></i>
+                    <p class="mt-2 text-gray-600">Loading users...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && filteredUsers.length === 0" class="p-8 text-center">
+                    <i class="fas fa-users text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                    <p class="text-gray-600 mb-4">There are no users matching your criteria.</p>
+                    <button @click="addUser()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add First User
+                    </button>
+                </div>
+
+                <!-- Error Message -->
+                <div x-show="error" class="p-4 bg-red-100 text-red-700 rounded mb-4" x-text="error"></div>
+
+                <!-- Table -->
+                <div x-show="!loading && filteredUsers.length > 0" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="user in filteredUsers" :key="user._id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                    <span class="text-sm font-medium text-indigo-600" x-text="user.name.charAt(0)"></span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900" x-text="user.name"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" x-text="user.email"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                              :class="{
+                                                  'bg-green-100 text-green-800': user.role === 'Employee',
+                                                  'bg-purple-100 text-purple-800': user.role === 'Admin'
+                                              }" x-text="user.role"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="new Date(user.createdAt).toLocaleDateString()"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <button @click="editUser(user)" class="text-indigo-600 hover:text-indigo-900">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button x-show="user._id !== currentUserId" @click="deleteUser(user)" class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div x-show="showUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4" @click.away="showUserModal = false">
+            <h3 class="text-lg font-semibold mb-4" x-text="editing ? 'Edit User' : 'Add New User'"></h3>
+            
+            <form @submit.prevent="saveUser()">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" x-model="userForm.name" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" x-model="userForm.email" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                        <select x-model="userForm.role" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Employee">Employee</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" @click="showUserModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        <span x-text="editing ? 'Update' : 'Create'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4" @click.away="showDeleteModal = false">
+            <h3 class="text-lg font-semibold mb-4">Delete User</h3>
+            
+            <p class="text-gray-600 mb-4">
+                Are you sure you want to delete <strong x-text="selectedUser?.name"></strong>? This action cannot be undone.
+            </p>
+
+            <div class="flex justify-end space-x-3">
+                <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button @click="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('manageUsers', () => ({
+            users: [],
+            loading: true,
+            searchTerm: '',
+            filter: 'all',
+            selectedUser: null,
+            showUserModal: false,
+            showDeleteModal: false,
+            userForm: {
+                name: '',
+                email: '',
+                role: 'Employee'
+            },
+            editing: false,
+            user: {},
+            error: '',
+            currentUserId: null,
+
+            init() {
+                this.loadData();
+            },
+
+            get filteredUsers() {
+                let filtered = Array.isArray(this.users) ? this.users : [];
+                
+                // Filter by role
+                if (this.filter !== 'all') {
+                    filtered = filtered.filter(user => user.role === this.filter);
+                }
+                
+                // Filter by search term
+                if (this.searchTerm) {
+                    const term = this.searchTerm.toLowerCase();
+                    filtered = filtered.filter(user => 
+                        user.name.toLowerCase().includes(term) ||
+                        user.email.toLowerCase().includes(term)
+                    );
+                }
+                
+                return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            },
+
+            async loadData() {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    // Load current user info
+                    const userResponse = await axios.get('/api/users/me');
+                    const currentUser = userResponse.data;
+                    if (currentUser.role !== 'Admin') {
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+                    this.currentUserId = currentUser._id;
+                    this.user = currentUser;
+
+                    // Load all users
+                    const usersResponse = await axios.get('/api/users');
+                    this.users = usersResponse.data;
+                    console.log('Users loaded:', this.users);
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    this.error = 'Failed to load data.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            addUser() {
+                this.editing = false;
+                this.userForm = {
+                    name: '',
+                    email: '',
+                    role: 'Employee'
+                };
+                this.showUserModal = true;
+            },
+
+            editUser(user) {
+                this.editing = true;
+                this.userForm = {
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                };
+                this.selectedUser = user;
+                this.showUserModal = true;
+            },
+
+            async saveUser() {
+                try {
+                    if (this.editing) {
+                        await axios.put(`/api/users/${this.selectedUser._id}`, this.userForm);
+                        // Update user in the list
+                        const index = this.users.findIndex(u => u._id === this.selectedUser._id);
+                        if (index !== -1) {
+                            this.users[index] = { ...this.users[index], ...this.userForm };
+                        }
+                    } else {
+                        // For new users, you might want to redirect to registration or handle differently
+                        alert('New user creation should be done through the registration process');
+                    }
+                    this.showUserModal = false;
+                } catch (error) {
+                    console.error('Error saving user:', error);
+                    alert(error.response?.data?.message || 'Error saving user');
+                }
+            },
+
+            deleteUser(user) {
+                this.selectedUser = user;
+                this.showDeleteModal = true;
+            },
+
+            async confirmDelete() {
+                try {
+                    await axios.delete(`/api/users/${this.selectedUser._id}`);
+                    this.users = this.users.filter(u => u._id !== this.selectedUser._id);
+                    this.showDeleteModal = false;
+                    this.selectedUser = null;
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    alert(error.response?.data?.message || 'Error deleting user');
+                }
+            },
+
+            logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('role');
+                window.location.href = '../auth/login.html';
+            }
+        }));
+    });
+</script>
+</body>
+</html>
