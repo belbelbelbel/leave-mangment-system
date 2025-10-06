@@ -51,18 +51,18 @@ app.use(async (req, res, next) => {
   }
 })
 
-// API Routes
-app.use("/api/auth", authRoutes)
-app.use("/api/users", userRoutes)
-app.use("/api/leaves", leaveRoutes)
-app.use("/api/balances", balanceRoutes)
-app.use("/api/balance-requests", balanceRequestRoutes)
-app.use("/api/notices", noticeRoutes)
-app.use("/api/admin", adminRoutes)
-app.use("/api/wellness", wellnessRoutes)
+// API Routes (no /api prefix needed - Vercel strips it)
+app.use("/auth", authRoutes)
+app.use("/users", userRoutes)
+app.use("/leaves", leaveRoutes)
+app.use("/balances", balanceRoutes)
+app.use("/balance-requests", balanceRequestRoutes)
+app.use("/notices", noticeRoutes)
+app.use("/admin", adminRoutes)
+app.use("/wellness", wellnessRoutes)
 
 // Health check endpoint
-app.get("/api", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ 
     message: "Leave Management System API is running",
     timestamp: new Date().toISOString(),
