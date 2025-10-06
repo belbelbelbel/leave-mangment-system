@@ -31,6 +31,16 @@ const connectDB = async () => {
   }
 }
 
+// Import models to ensure they're registered with mongoose
+require("../models/User")
+require("../models/Balance")
+require("../models/BalanceRequest")
+require("../models/Leave")
+require("../models/Notice")
+require("../models/Notification")
+require("../models/wellnessArticle")
+require("../models/wellnessEvent")
+
 // Routes
 const authRoutes = require("../routes/authRoutes")
 const userRoutes = require("../routes/userRoutes")
@@ -47,7 +57,11 @@ app.use(async (req, res, next) => {
     await connectDB()
     next()
   } catch (error) {
-    res.status(500).json({ error: "Database connection failed" })
+    console.error("Database connection failed:", error)
+    res.status(500).json({
+      error: "Database connection failed",
+      details: error.message
+    })
   }
 })
 
@@ -61,20 +75,46 @@ app.use("/notices", noticeRoutes)
 app.use("/admin", adminRoutes)
 app.use("/wellness", wellnessRoutes)
 
-// Health check endpoint
+// Health check endpoint with debug info
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "Leave Management System API is running",
     timestamp: new Date().toISOString(),
+    environment: {
+      mongodb_uri_exists: !!process.env.MONGODB_URI,
+      jwt_secret_exists: !!process.env.JWT_SECRET,
+      node_env: process.env.NODE_ENV
+    },
     endpoints: {
       auth: "/api/auth",
-      users: "/api/users", 
+      users: "/api/users",
       leaves: "/api/leaves",
       balances: "/api/balances",
       balanceRequests: "/api/balance-requests",
       notices: "/api/notices",
       admin: "/api/admin",
       wellness: "/api/wellness"
+    }
+  })
+})
+
+// Add debug endpoint for troubleshooting
+app.get("/debug", (req, res) => {
+  res.json({
+    message: "Debug information",
+    environment_variables: {
+      MONGODB_URI: process.env.MONGODB_URI ? "Set" : "Missing",
+      JWT_SECRET: process.env.JWT_SECRET ? "Set" : "Missing",
+      NODE_ENV: process.env.NODE_ENV || "Not set"
+    },
+    mongoose_connection: {
+      ready_state: mongoose.connection.readyState,
+      states: {
+        0: "disconnected",
+        1: "connected",
+        2: "connecting",
+        3: "disconnecting"
+      }
     }
   })
 })
