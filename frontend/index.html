@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HEBRON WATER | Modern Leave & Wellbeing Management</title>
+    <title>LEAVEWISE | Modern Leave & Wellbeing Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
@@ -39,34 +39,137 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            scroll-behavior: smooth;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px; /* Account for sticky navbar */
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
         }
+        
+        /* Enhanced smooth scrolling for webkit browsers */
+        html, body {
+            scroll-behavior: smooth;
+            -webkit-scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+        }
+        
         .gradient-bg {
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
         }
+        
         .card-hover {
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
         .card-hover:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
+        
         .testimonial-card {
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
         .testimonial-card:hover {
             transform: scale(1.03);
+        }
+        
+        /* Smooth scroll indicator */
+        .scroll-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            transform-origin: left;
+            transform: scaleX(0);
+            z-index: 9999;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Smooth navigation link transitions */
+        nav a {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        nav a:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* Smooth section transitions */
+        section {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Back to top button */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .back-to-top:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-indicator"></div>
+    
     <!-- Navbar -->
     <nav class="w-full flex items-center justify-between px-4 md:px-8 py-4 border-b bg-white sticky top-0 z-50 shadow-sm">
         <div class="flex items-center space-x-2">
-            <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">H</div>
-            <span class="font-bold text-xl tracking-tight">HEBRON WATER</span>
+            <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">L</div>
+            <span class="font-bold text-xl tracking-tight">LEAVEWISE</span>
         </div>
         <div class="hidden md:flex items-center space-x-8">
             <a href="/" class="text-primary-600 font-medium border-b-2 border-primary-600 pb-1">Home</a>
@@ -442,7 +545,7 @@
                             </div>
                             <div>
                                 <h3 class="font-semibold mb-1">Email Us</h3>
-                                <p class="text-gray-600">info@hebronwater.com<br>support@hebronwater.com</p>
+                                <p class="text-gray-600">info@leavewise.com<br>support@leavewise.com</p>
                             </div>
                         </div>
                         
@@ -571,8 +674,8 @@
                 <!-- Company Info -->
                 <div>
                     <div class="flex items-center space-x-2 mb-6">
-                        <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">H</div>
-                        <span class="font-bold text-xl tracking-tight">HEBRON WATER</span>
+                        <div class="h-10 w-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xl">L</div>
+                        <span class="font-bold text-xl tracking-tight">LEAVEWISE</span>
                     </div>
                     <p class="text-gray-400 mb-6">Modern leave management and employee wellbeing platform designed for the future of work.</p>
                     <div class="flex space-x-4">
@@ -629,7 +732,7 @@
             </div>
             
             <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400 text-sm mb-4 md:mb-0">&copy; 2024 Hebron Water. All rights reserved.</p>
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">&copy; 2024 LeaveWise. All rights reserved.</p>
                 <div class="flex space-x-6">
                     <a href="#" class="text-gray-400 hover:text-white text-sm transition">Terms of Service</a>
                     <a href="#" class="text-gray-400 hover:text-white text-sm transition">Privacy Policy</a>
@@ -639,18 +742,147 @@
         </div>
     </footer>
 
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
     <script>
-        // Simple JavaScript for mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
             const menuButton = document.querySelector('button.md\\:hidden');
             const mobileMenu = document.querySelector('.hidden.md\\:hidden');
             
-            menuButton.addEventListener('click', function() {
-                if (mobileMenu.classList.contains('hidden')) {
-                    mobileMenu.classList.remove('hidden');
-                } else {
-                    mobileMenu.classList.add('hidden');
+            if (menuButton && mobileMenu) {
+                menuButton.addEventListener('click', function() {
+                    if (mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.remove('hidden');
+                    } else {
+                        mobileMenu.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Smooth scroll progress indicator
+            const scrollIndicator = document.querySelector('.scroll-indicator');
+            
+            function updateScrollProgress() {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight - windowHeight;
+                const scrollProgress = (window.scrollY / documentHeight) * 100;
+                
+                if (scrollIndicator) {
+                    scrollIndicator.style.transform = `scaleX(${scrollProgress / 100})`;
                 }
+            }
+
+            // Back to top button functionality
+            const backToTopButton = document.getElementById('backToTop');
+            
+            function toggleBackToTopButton() {
+                if (window.scrollY > 300) {
+                    backToTopButton.classList.add('visible');
+                } else {
+                    backToTopButton.classList.remove('visible');
+                }
+            }
+
+            // Enhanced smooth scrolling for navigation links
+            function smoothScrollTo(target, duration = 1000) {
+                const targetElement = document.querySelector(target);
+                if (!targetElement) return;
+
+                const targetPosition = targetElement.offsetTop - 80; // Account for navbar
+                const startPosition = window.scrollY;
+                const distance = targetPosition - startPosition;
+                let startTime = null;
+
+                function animation(currentTime) {
+                    if (startTime === null) startTime = currentTime;
+                    const timeElapsed = currentTime - startTime;
+                    const run = easeInOutCubic(timeElapsed, startPosition, distance, duration);
+                    window.scrollTo(0, run);
+                    if (timeElapsed < duration) requestAnimationFrame(animation);
+                }
+
+                // Easing function for smooth animation
+                function easeInOutCubic(t, b, c, d) {
+                    t /= d / 2;
+                    if (t < 1) return c / 2 * t * t * t + b;
+                    t -= 2;
+                    return c / 2 * (t * t * t + 2) + b;
+                }
+
+                requestAnimationFrame(animation);
+            }
+
+            // Add smooth scroll to all navigation links
+            const navLinks = document.querySelectorAll('nav a[href^="#"], .hidden.md\\:hidden a[href^="#"]');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    smoothScrollTo(targetId);
+                    
+                    // Close mobile menu if open
+                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Back to top button click handler
+            backToTopButton.addEventListener('click', function() {
+                smoothScrollTo('body', 800);
+            });
+
+            // Scroll event listeners
+            let ticking = false;
+            function handleScroll() {
+                if (!ticking) {
+                    requestAnimationFrame(function() {
+                        updateScrollProgress();
+                        toggleBackToTopButton();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }
+
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            
+            // Initialize on load
+            updateScrollProgress();
+            toggleBackToTopButton();
+
+            // Add intersection observer for section animations (optional enhancement)
+            const sections = document.querySelectorAll('section');
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const sectionObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+
+            // Smooth scroll for footer links
+            const footerLinks = document.querySelectorAll('footer a[href^="#"]');
+            footerLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    smoothScrollTo(targetId);
+                });
             });
         });
     </script>
