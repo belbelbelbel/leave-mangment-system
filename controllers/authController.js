@@ -5,6 +5,9 @@ const jwt = require("jsonwebtoken")
 
 
 const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured in environment variables')
+  }
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" })
 }
 
@@ -153,9 +156,40 @@ const login = async (req, res) => {
   } catch (error) {
     console.error("Login error:", error)
     console.error("Error stack:", error.stack)
-    res.status(500).json({ 
-      message: "Server error during login.",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    console.error("Error name:", error.name)
+    console.error("Error message:", error.message)
+    console.error("Error code:", error.code)
+    
+    // Provide more helpful error messages
+    let errorMessage = "Server error during login."
+    let statusCode = 500
+    
+    if (error.message.includes('JWT_SECRET') || error.message.includes('JWT_SECRET is not configured')) {
+      errorMessage = "Server configuration error. JWT_SECRET not set."
+      statusCode = 500
+    } else if (error.message.includes('connection') || error.message.includes('MongoDB') || error.message.includes('querySrv')) {
+      errorMessage = "Database connection error. Please check MongoDB connection."
+      statusCode = 500
+    } else if (error.name === 'MongoServerError') {
+      errorMessage = "Database error. Please try again."
+      statusCode = 500
+    } else if (mongoose.connection.readyState !== 1) {
+      errorMessage = "Database not connected. Please check server configuration."
+      statusCode = 500
+    }
+    
+    // Always include error details in Vercel for debugging
+    const isVercel = !!process.env.VERCEL
+    const isDev = process.env.NODE_ENV === 'development'
+    
+    res.status(statusCode).json({ 
+      message: errorMessage,
+      error: (isVercel || isDev) ? error.message : undefined,
+      errorType: error.name,
+      errorCode: error.code,
+      // Include database status for debugging
+      dbStatus: mongoose.connection.readyState,
+      dbConnected: mongoose.connection.readyState === 1
     })
   }
 }

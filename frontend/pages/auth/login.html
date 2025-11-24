@@ -166,7 +166,20 @@
                         }
 
                     } catch (error) {
-                        this.error = error.response?.data?.message || 'Login failed. Please check your credentials.';
+                        console.error('Login error:', error);
+                        console.error('Error response:', error.response?.data);
+                        
+                        // Show more detailed error message
+                        const errorMessage = error.response?.data?.message || 
+                                           error.response?.data?.error || 
+                                           error.message || 
+                                           'Login failed. Please check your credentials.';
+                        this.error = errorMessage;
+                        
+                        // If it's a server error, show helpful message
+                        if (error.response?.status === 500) {
+                            this.error = errorMessage + ' (Server error - check Vercel logs)';
+                        }
                     } finally {
                         this.loading = false;
                     }
