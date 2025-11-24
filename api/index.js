@@ -1,5 +1,4 @@
 const express = require("express")
-const serverless = require("serverless-http")
 const cors = require("cors")
 require("dotenv").config()
 
@@ -9,73 +8,18 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// Database connection
+// Database connection - use singleton from config/db.js
 const connectDB = require("../config/db")
-
-// Connect to database (for serverless, connection is reused)
 const mongoose = require('mongoose')
-let dbConnected = false
-let dbConnecting = false
 
-const ensureDBConnection = async () => {
-  // If already connected, return
-  if (mongoose.connection.readyState === 1) {
-    dbConnected = true
-    return
-  }
-
-  // If already connecting, wait
-  if (dbConnecting) {
-    return new Promise((resolve) => {
-      const checkConnection = setInterval(() => {
-        if (mongoose.connection.readyState === 1 || dbConnected) {
-          clearInterval(checkConnection)
-          resolve()
-        }
-      }, 100)
-    })
-  }
-
-  // Start connection
-  dbConnecting = true
-  try {
-    const uri = process.env.MONGODB_URI || process.env.MONGO_URI
-    if (!uri) {
-      console.error('❌ MONGODB_URI not found in environment variables')
-      throw new Error('MONGODB_URI not configured')
-    }
-
-    // Connect with options for serverless
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-    })
-    
-    dbConnected = true
-    dbConnecting = false
-    console.log('✅ MongoDB connected successfully')
-  } catch (error) {
-    dbConnecting = false
-    console.error('❌ Database connection error:', error.message)
-    console.error('Error details:', {
-      name: error.name,
-      code: error.code,
-      message: error.message
-    })
-    throw error // Re-throw so routes can handle it
-  }
-}
-
-// Ensure DB connection on first request
+// Ensure DB connection on first request (serverless-friendly)
 app.use(async (req, res, next) => {
   try {
-    await ensureDBConnection()
+    await connectDB()
     next()
   } catch (error) {
-    // If connection fails, still allow request to continue
-    // Routes will check connection status and return appropriate errors
-    console.error('Failed to ensure DB connection:', error.message)
+    console.error('Database connection error:', error.message)
+    // Continue to next middleware - routes will handle DB errors
     next()
   }
 })
@@ -197,4 +141,6 @@ app.use((err, req, res, next) => {
   })
 })
 
-module.exports = serverless(app)
+// Export as default for Vercel (per Vercel Express documentation)
+// Vercel automatically handles serverless wrapping
+module.exports = app
