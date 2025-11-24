@@ -4,11 +4,8 @@ require("dotenv").config()
 
 async function fixExistingLeaves() {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGO_URI)
     console.log("Connected to MongoDB")
-
-    // Find all leaves without requestedDays
     const leavesWithoutDays = await Leave.find({
       $or: [{ requestedDays: { $exists: false } }, { requestedDays: null }, { requestedDays: 0 }],
     })

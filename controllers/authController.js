@@ -3,15 +3,13 @@ const Balance = require("../models/Balance")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 
-// Generate JWT token
+
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "24h" })
 }
 
-// Initialize default balances for new user
 const initializeBalances = async (employeeId) => {
   try {
-    // Create default balances with correct values: Sick=10, Vacation=15, Personal=5
     const defaultBalances = [
       { employeeId, leaveType: "Sick", balance: 10 },
       { employeeId, leaveType: "Vacation", balance: 15 },

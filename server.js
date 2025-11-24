@@ -13,7 +13,11 @@ app.use(express.static(path.join(__dirname, "frontend")))
 
 // Database connection
 const connectDB = require("./config/db")
-connectDB()
+// Connect to database (non-blocking - server will start even if DB fails initially)
+connectDB().catch((err) => {
+  console.error("Initial database connection failed, but server will continue:", err.message)
+  console.log("Note: Database operations will fail until connection is established")
+})
 
 // Routes
 const authRoutes = require("./routes/authRoutes")

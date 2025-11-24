@@ -3,21 +3,17 @@ const Leave = require("../models/Leave")
 const WellnessEvent = require("../models/WellnessEvent")
 const WellnessArticle = require("../models/WellnessArticle")
 
-// Get dashboard statistics
 const getDashboardStats = async (req, res) => {
   try {
-    // Leave statistics
     const totalLeaves = await Leave.countDocuments()
     const pendingLeaves = await Leave.countDocuments({ status: "Pending" })
     const approvedLeaves = await Leave.countDocuments({ status: "Approved" })
     const rejectedLeaves = await Leave.countDocuments({ status: "Rejected" })
 
-    // User statistics
     const totalUsers = await User.countDocuments()
     const totalEmployees = await User.countDocuments({ role: "Employee" })
     const totalAdmins = await User.countDocuments({ role: "Admin" })
 
-    // Wellness statistics
     const totalArticles = await WellnessArticle.countDocuments({ isPublished: true })
     const totalEvents = await WellnessEvent.countDocuments({ isActive: true })
     const upcomingEvents = await WellnessEvent.countDocuments({
@@ -25,7 +21,6 @@ const getDashboardStats = async (req, res) => {
       date: { $gte: new Date() },
     })
 
-    // Monthly statistics
     const currentMonth = new Date()
     currentMonth.setDate(1)
     currentMonth.setHours(0, 0, 0, 0)
@@ -59,7 +54,6 @@ const getDashboardStats = async (req, res) => {
   }
 }
 
-// Get recent activities
 const getRecentActivities = async (req, res) => {
   try {
     const recentLeaves = await Leave.find().populate("employeeId", "name email").sort({ createdAt: -1 }).limit(10)

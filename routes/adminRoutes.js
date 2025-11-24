@@ -4,7 +4,6 @@ const { getDashboardStats, getRecentActivities } = require("../controllers/admin
 const auth = require("../middleware/auth")
 const { requireAdmin } = require("../middleware/role")
 
-// Dashboard routes
 router.get("/stats", auth, requireAdmin, getDashboardStats)
 router.get("/activities", auth, requireAdmin, getRecentActivities)
 

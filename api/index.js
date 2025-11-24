@@ -1,94 +1,75 @@
 const express = require("express")
 const serverless = require("serverless-http")
+const cors = require("cors")
+require("dotenv").config()
 
 const app = express()
 
-// Basic middleware
+// Middleware
+app.use(cors())
 app.use(express.json())
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With')
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200)
-  } else {
-    next()
+
+// Database connection
+const connectDB = require("../config/db")
+
+// Connect to database (for serverless, connection is reused)
+let dbConnected = false
+const ensureDBConnection = async () => {
+  if (!dbConnected) {
+    try {
+      await connectDB()
+      dbConnected = true
+    } catch (error) {
+      console.error("Database connection error:", error)
+      // Don't throw - let routes handle it
+    }
   }
+}
+
+// Ensure DB connection on first request
+app.use(async (req, res, next) => {
+  await ensureDBConnection()
+  next()
 })
 
-// Simple health check - no database
+// Routes
+const authRoutes = require("../routes/authRoutes")
+const userRoutes = require("../routes/userRoutes")
+const leaveRoutes = require("../routes/leaveRoutes")
+const balanceRoutes = require("../routes/balanceRoutes")
+const balanceRequestRoutes = require("../routes/balanceRequestRoutes")
+const noticeRoutes = require("../routes/noticeRoutes")
+const adminRoutes = require("../routes/adminRoutes")
+const wellnessRoutes = require("../routes/wellnessRoutes")
+
+// Note: Vercel strips the /api prefix when routing to serverless functions
+// So routes should be mounted without /api prefix
+app.use("/auth", authRoutes)
+app.use("/users", userRoutes)
+app.use("/leaves", leaveRoutes)
+app.use("/balances", balanceRoutes)
+app.use("/balance-requests", balanceRequestRoutes)
+app.use("/notices", noticeRoutes)
+app.use("/admin", adminRoutes)
+app.use("/wellness", wellnessRoutes)
+
+// Health check endpoint
 app.get("/", (req, res) => {
-  res.json({ 
-    message: "API is running",
+  res.json({
+    message: "Leave Management System API is running",
     timestamp: new Date().toISOString(),
-    status: "OK"
+    status: "OK",
+    endpoints: {
+      auth: "/api/auth",
+      users: "/api/users",
+      leaves: "/api/leaves",
+      balances: "/api/balances",
+      balanceRequests: "/api/balance-requests",
+      notices: "/api/notices",
+      admin: "/api/admin",
+      wellness: "/api/wellness"
+    }
   })
-})
-
-// Simple registration endpoint without database (for testing)
-app.post("/auth/register", (req, res) => {
-  try {
-    const { name, email, password, role } = req.body
-
-    // Basic validation
-    if (!name || !email || !password) {
-      return res.status(400).json({ 
-        message: "Name, email and password are required",
-        received: { name: !!name, email: !!email, password: !!password }
-      })
-    }
-
-    // Simulate successful registration (no database)
-    res.status(201).json({
-      message: "Registration endpoint working (no database yet)",
-      user: {
-        name,
-        email,
-        role: role || "Employee"
-      },
-      note: "This is a test response - database connection will be added next"
-    })
-  } catch (error) {
-    console.error("Registration error:", error)
-    res.status(500).json({ 
-      message: "Registration error", 
-      error: error.message,
-      stack: error.stack
-    })
-  }
-})
-
-// Simple login endpoint without database (for testing)
-app.post("/auth/login", (req, res) => {
-  try {
-    const { email, password } = req.body
-
-    if (!email || !password) {
-      return res.status(400).json({ 
-        message: "Email and password are required",
-        received: { email: !!email, password: !!password }
-      })
-    }
-
-    // Simulate successful login (no database)
-    res.json({
-      message: "Login endpoint working (no database yet)",
-      token: "fake-token-for-testing",
-      user: {
-        email,
-        role: "Employee"
-      },
-      note: "This is a test response - database connection will be added next"
-    })
-  } catch (error) {
-    console.error("Login error:", error)
-    res.status(500).json({ 
-      message: "Login error", 
-      error: error.message,
-      stack: error.stack
-    })
-  }
 })
 
 // Debug endpoint
@@ -99,27 +80,37 @@ app.get("/debug", (req, res) => {
       node_version: process.version,
       mongodb_uri_exists: !!process.env.MONGODB_URI,
       jwt_secret_exists: !!process.env.JWT_SECRET,
-      vercel_region: process.env.VERCEL_REGION || "unknown"
+      vercel_region: process.env.VERCEL_REGION || "unknown",
+      node_env: process.env.NODE_ENV || "development"
     },
     request_info: {
       method: req.method,
       url: req.url,
-      headers: req.headers
+      path: req.path
     }
   })
 })
 
 // Catch all other routes
 app.all("*", (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     message: "Route not found",
     path: req.path,
     method: req.method,
     available_routes: [
-      "GET /api/",
-      "GET /api/debug", 
+      "GET /api (or /api/)",
+      "GET /api/debug",
       "POST /api/auth/register",
-      "POST /api/auth/login"
+      "POST /api/auth/login",
+      "GET /api/auth/me",
+      "GET /api/users",
+      "GET /api/leaves",
+      "GET /api/balances",
+      "GET /api/balance-requests",
+      "GET /api/notices",
+      "GET /api/admin/stats",
+      "GET /api/wellness/articles",
+      "GET /api/wellness/events"
     ]
   })
 })
@@ -127,7 +118,7 @@ app.all("*", (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err)
-  res.status(500).json({ 
+  res.status(500).json({
     message: "Internal server error",
     error: err.message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined

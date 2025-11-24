@@ -21,10 +21,9 @@ const balanceSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Compound index to ensure unique balance per employee and leave type
+
 balanceSchema.index({ employeeId: 1, leaveType: 1 }, { unique: true });
 
-// Virtual for employee name
 balanceSchema.virtual('employeeName', {
     ref: 'User',
     localField: 'employeeId',
@@ -33,7 +32,7 @@ balanceSchema.virtual('employeeName', {
     options: { select: 'name' }
 });
 
-// Ensure virtuals are serialized
+
 balanceSchema.set('toJSON', { virtuals: true });
 balanceSchema.set('toObject', { virtuals: true });
 

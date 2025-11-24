@@ -4,13 +4,12 @@ const User = require("../models/User")
 const { createNotification } = require("./notificationController")
 const { sendLeaveRequestNotification, sendLeaveStatusUpdate } = require("./emailController")
 
-// Apply for leave (Employee)
 const applyLeave = async (req, res) => {
   try {
     const { startDate, endDate, leaveType, description } = req.body
     const employeeId = req.user._id
 
-    // Validate dates
+
     if (new Date(startDate) < new Date()) {
       return res.status(400).json({ message: "Start date cannot be in the past." })
     }
@@ -19,13 +18,12 @@ const applyLeave = async (req, res) => {
       return res.status(400).json({ message: "End date must be after start date." })
     }
 
-    // Calculate leave days (including both start and end dates)
+ 
     const start = new Date(startDate)
     const end = new Date(endDate)
     const timeDiff = end.getTime() - start.getTime()
     const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1
 
-    // Check leave balance
     const balance = await Balance.findOne({ employeeId, leaveType })
     if (!balance || balance.balance < days) {
       return res.status(400).json({
@@ -33,14 +31,14 @@ const applyLeave = async (req, res) => {
       })
     }
 
-    // Create leave request
+
     const leave = new Leave({
       employeeId,
       startDate,
       endDate,
       leaveType,
       description,
-      requestedDays: days, // Store the number of days requested
+      requestedDays: days,
     })
 
     await leave.save()
@@ -175,7 +173,7 @@ const getMyLeaves = async (req, res) => {
   }
 }
 
-// Get all leaves (Admin)
+
 const getAllLeaves = async (req, res) => {
   try {
     const leaves = await Leave.find().populate("employeeId", "name email").sort({ createdAt: -1 })

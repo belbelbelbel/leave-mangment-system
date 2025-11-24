@@ -11,7 +11,6 @@ const getMyBalance = async (req, res) => {
     let balances = await Balance.find({ employeeId: req.user._id })
     console.log("📊 Found balances:", balances)
 
-    // If no balances exist, create them
     if (balances.length === 0) {
       console.log("🔧 No balances found, creating default balances...")
 
@@ -51,7 +50,6 @@ const getMyBalance = async (req, res) => {
   }
 }
 
-// Initialize default balances for new user
 const initializeBalances = async (employeeId) => {
   try {
     const defaultBalances = [
