@@ -35,6 +35,24 @@ const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body
 
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        message: "Name, email, and password are required.",
+        received: { name: !!name, email: !!email, password: !!password }
+      })
+    }
+
+    // Check if database is connected
+    const mongoose = require('mongoose')
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
+      return res.status(500).json({ 
+        message: "Database connection error. Please try again later.",
+        error: "Database not connected"
+      })
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email })
     if (existingUser) {
@@ -66,7 +84,24 @@ const register = async (req, res) => {
     })
   } catch (error) {
     console.error("Registration error:", error)
-    res.status(500).json({ message: "Server error during registration." })
+    console.error("Error stack:", error.stack)
+    console.error("Error name:", error.name)
+    console.error("Error message:", error.message)
+    
+    // Provide more helpful error messages
+    let errorMessage = "Server error during registration."
+    if (error.name === 'MongoServerError' && error.code === 11000) {
+      errorMessage = "User already exists with this email."
+    } else if (error.name === 'ValidationError') {
+      errorMessage = "Validation error: " + Object.values(error.errors).map(e => e.message).join(', ')
+    } else if (error.message.includes('connection')) {
+      errorMessage = "Database connection error. Please check your MongoDB connection."
+    }
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   }
 }
 
@@ -75,15 +110,27 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body
 
+    // Check if database is connected
+    const mongoose = require('mongoose')
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
+      return res.status(500).json({ 
+        message: "Database connection error. Please try again later.",
+        error: "Database not connected"
+      })
+    }
+
     // Find user by email
     const user = await User.findOne({ email })
     if (!user) {
+      console.log(`❌ Login attempt failed: User not found for email: ${email}`)
       return res.status(400).json({ message: "Invalid email or password." })
     }
 
     // Check password
     const isPasswordValid = await user.comparePassword(password)
     if (!isPasswordValid) {
+      console.log(`❌ Login attempt failed: Invalid password for email: ${email}`)
       return res.status(400).json({ message: "Invalid email or password." })
     }
 
@@ -105,7 +152,11 @@ const login = async (req, res) => {
     })
   } catch (error) {
     console.error("Login error:", error)
-    res.status(500).json({ message: "Server error during login." })
+    console.error("Error stack:", error.stack)
+    res.status(500).json({ 
+      message: "Server error during login.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   }
 }
 

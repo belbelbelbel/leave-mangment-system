@@ -13,23 +13,71 @@ app.use(express.json())
 const connectDB = require("../config/db")
 
 // Connect to database (for serverless, connection is reused)
+const mongoose = require('mongoose')
 let dbConnected = false
+let dbConnecting = false
+
 const ensureDBConnection = async () => {
-  if (!dbConnected) {
-    try {
-      await connectDB()
-      dbConnected = true
-    } catch (error) {
-      console.error("Database connection error:", error)
-      // Don't throw - let routes handle it
+  // If already connected, return
+  if (mongoose.connection.readyState === 1) {
+    dbConnected = true
+    return
+  }
+
+  // If already connecting, wait
+  if (dbConnecting) {
+    return new Promise((resolve) => {
+      const checkConnection = setInterval(() => {
+        if (mongoose.connection.readyState === 1 || dbConnected) {
+          clearInterval(checkConnection)
+          resolve()
+        }
+      }, 100)
+    })
+  }
+
+  // Start connection
+  dbConnecting = true
+  try {
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URI
+    if (!uri) {
+      console.error('❌ MONGODB_URI not found in environment variables')
+      throw new Error('MONGODB_URI not configured')
     }
+
+    // Connect with options for serverless
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+    })
+    
+    dbConnected = true
+    dbConnecting = false
+    console.log('✅ MongoDB connected successfully')
+  } catch (error) {
+    dbConnecting = false
+    console.error('❌ Database connection error:', error.message)
+    console.error('Error details:', {
+      name: error.name,
+      code: error.code,
+      message: error.message
+    })
+    throw error // Re-throw so routes can handle it
   }
 }
 
 // Ensure DB connection on first request
 app.use(async (req, res, next) => {
-  await ensureDBConnection()
-  next()
+  try {
+    await ensureDBConnection()
+    next()
+  } catch (error) {
+    // If connection fails, still allow request to continue
+    // Routes will check connection status and return appropriate errors
+    console.error('Failed to ensure DB connection:', error.message)
+    next()
+  }
 })
 
 // Routes
@@ -73,15 +121,39 @@ app.get("/", (req, res) => {
 })
 
 // Debug endpoint
-app.get("/debug", (req, res) => {
+app.get("/debug", async (req, res) => {
+  const mongoose = require('mongoose')
+  const User = require('../models/User')
+  
+  let dbStatus = 'unknown'
+  let userCount = 0
+  
+  try {
+    dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    if (mongoose.connection.readyState === 1) {
+      userCount = await User.countDocuments()
+    }
+  } catch (err) {
+    dbStatus = 'error: ' + err.message
+  }
+  
   res.json({
     message: "Debug info",
     environment: {
       node_version: process.version,
       mongodb_uri_exists: !!process.env.MONGODB_URI,
+      mongodb_uri_length: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
       jwt_secret_exists: !!process.env.JWT_SECRET,
+      jwt_secret_length: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
       vercel_region: process.env.VERCEL_REGION || "unknown",
       node_env: process.env.NODE_ENV || "development"
+    },
+    database: {
+      status: dbStatus,
+      readyState: mongoose.connection.readyState,
+      host: mongoose.connection.host || 'not connected',
+      name: mongoose.connection.name || 'not connected',
+      user_count: userCount
     },
     request_info: {
       method: req.method,
