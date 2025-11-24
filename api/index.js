@@ -148,24 +148,22 @@ app.use((err, req, res, next) => {
   console.error("Error message:", err.message)
   console.error("Error stack:", err.stack)
   
-  // Always include error details in Vercel (regardless of NODE_ENV)
-  const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_ENV
-  
-  // Return error in format expected by frontend
+  // ALWAYS show error details in Vercel (no conditions)
   const statusCode = err.status || 500
   res.status(statusCode).json({
     error: {
       code: statusCode.toString(),
       message: err.message || "Internal server error"
     },
-    // Always include debug info in Vercel for troubleshooting
-    ...(isVercel ? {
-      errorType: err.name,
-      errorDetails: err.message,
-      stack: err.stack,
-      nodeEnv: process.env.NODE_ENV || 'not set',
-      isVercel: true
-    } : {})
+    // Always include full error details for debugging
+    errorType: err.name,
+    errorDetails: err.message,
+    errorCode: err.code,
+    stack: err.stack,
+    nodeEnv: process.env.NODE_ENV || 'not set',
+    isVercel: !!(process.env.VERCEL || process.env.VERCEL_ENV),
+    mongodbUriExists: !!process.env.MONGODB_URI,
+    jwtSecretExists: !!process.env.JWT_SECRET
   })
 })
 

@@ -121,20 +121,20 @@ const register = async (req, res) => {
       errorMessage = "Database connection error. Please check your MongoDB connection."
     }
     
-    // Always show error details in Vercel (regardless of NODE_ENV)
-    const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_ENV
+    // ALWAYS return full error details (no conditions)
     res.status(500).json({ 
       error: {
         code: "500",
         message: errorMessage
       },
-      ...(isVercel ? {
-        errorType: error.name,
-        errorCode: error.code,
-        errorDetails: error.message,
-        nodeEnv: process.env.NODE_ENV || 'not set',
-        isVercel: true
-      } : {})
+      errorType: error.name,
+      errorCode: error.code,
+      errorDetails: error.message,
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      isVercel: !!(process.env.VERCEL || process.env.VERCEL_ENV),
+      mongodbUriExists: !!process.env.MONGODB_URI,
+      jwtSecretExists: !!process.env.JWT_SECRET,
+      stack: error.stack
     })
   }
 }
@@ -237,25 +237,23 @@ const login = async (req, res) => {
       statusCode = 500
     }
     
-    // Always include error details in Vercel (regardless of NODE_ENV)
-    const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_ENV
-    
-    // Return error in format expected by frontend
+    // ALWAYS return full error details (no conditions)
     res.status(statusCode).json({ 
       error: {
         code: statusCode.toString(),
         message: errorMessage
       },
-      // Always include debug info in Vercel for troubleshooting
-      ...(isVercel ? {
-        errorType: error.name,
-        errorCode: error.code,
-        errorDetails: error.message,
-        dbStatus: mongoose.connection.readyState,
-        dbConnected: mongoose.connection.readyState === 1,
-        nodeEnv: process.env.NODE_ENV || 'not set',
-        isVercel: true
-      } : {})
+      // Always include full debug info
+      errorType: error.name,
+      errorCode: error.code,
+      errorDetails: error.message,
+      dbStatus: mongoose.connection.readyState,
+      dbConnected: mongoose.connection.readyState === 1,
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      isVercel: !!(process.env.VERCEL || process.env.VERCEL_ENV),
+      mongodbUriExists: !!process.env.MONGODB_URI,
+      jwtSecretExists: !!process.env.JWT_SECRET,
+      stack: error.stack
     })
   }
 }
