@@ -1,4 +1,5 @@
 const express = require("express")
+const serverless = require("serverless-http")
 const cors = require("cors")
 require("dotenv").config()
 
@@ -159,6 +160,5 @@ app.use((err, req, res, next) => {
   })
 })
 
-// Export as default for Vercel (per Vercel Express documentation)
-// Vercel automatically handles serverless wrapping
-module.exports = app
+// Export with serverless-http wrapper for Vercel /api folder structure
+module.exports = serverless(app)
