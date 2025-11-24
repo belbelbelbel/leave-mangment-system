@@ -56,17 +56,22 @@ const register = async (req, res) => {
     } catch (dbError) {
       console.error('❌ Database connection failed in register:', dbError.message)
       return res.status(500).json({ 
-        message: "Database connection error. Please try again later.",
-        error: dbError.message,
-        errorType: dbError.name
+        error: {
+          code: "500",
+          message: "Database connection error. Please try again later."
+        },
+        errorType: dbError.name,
+        errorDetails: dbError.message
       })
     }
     
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
       return res.status(500).json({ 
-        message: "Database connection error. Please try again later.",
-        error: "Database not connected",
+        error: {
+          code: "500",
+          message: "Database connection error. Please try again later."
+        },
         dbState: mongoose.connection.readyState
       })
     }
@@ -116,9 +121,20 @@ const register = async (req, res) => {
       errorMessage = "Database connection error. Please check your MongoDB connection."
     }
     
+    // Always show error details in Vercel (regardless of NODE_ENV)
+    const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_ENV
     res.status(500).json({ 
-      message: errorMessage,
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: {
+        code: "500",
+        message: errorMessage
+      },
+      ...(isVercel ? {
+        errorType: error.name,
+        errorCode: error.code,
+        errorDetails: error.message,
+        nodeEnv: process.env.NODE_ENV || 'not set',
+        isVercel: true
+      } : {})
     })
   }
 }
@@ -146,17 +162,22 @@ const login = async (req, res) => {
     } catch (dbError) {
       console.error('❌ Database connection failed in login:', dbError.message)
       return res.status(500).json({ 
-        message: "Database connection error. Please try again later.",
-        error: dbError.message,
-        errorType: dbError.name
+        error: {
+          code: "500",
+          message: "Database connection error. Please try again later."
+        },
+        errorType: dbError.name,
+        errorDetails: dbError.message
       })
     }
     
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
       return res.status(500).json({ 
-        message: "Database connection error. Please try again later.",
-        error: "Database not connected",
+        error: {
+          code: "500",
+          message: "Database connection error. Please try again later."
+        },
         dbState: mongoose.connection.readyState
       })
     }
@@ -216,18 +237,25 @@ const login = async (req, res) => {
       statusCode = 500
     }
     
-    // Always include error details in Vercel for debugging
-    const isVercel = !!process.env.VERCEL
-    const isDev = process.env.NODE_ENV === 'development'
+    // Always include error details in Vercel (regardless of NODE_ENV)
+    const isVercel = !!process.env.VERCEL || !!process.env.VERCEL_ENV
     
+    // Return error in format expected by frontend
     res.status(statusCode).json({ 
-      message: errorMessage,
-      error: (isVercel || isDev) ? error.message : undefined,
-      errorType: error.name,
-      errorCode: error.code,
-      // Include database status for debugging
-      dbStatus: mongoose.connection.readyState,
-      dbConnected: mongoose.connection.readyState === 1
+      error: {
+        code: statusCode.toString(),
+        message: errorMessage
+      },
+      // Always include debug info in Vercel for troubleshooting
+      ...(isVercel ? {
+        errorType: error.name,
+        errorCode: error.code,
+        errorDetails: error.message,
+        dbStatus: mongoose.connection.readyState,
+        dbConnected: mongoose.connection.readyState === 1,
+        nodeEnv: process.env.NODE_ENV || 'not set',
+        isVercel: true
+      } : {})
     })
   }
 }

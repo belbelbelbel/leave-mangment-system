@@ -170,14 +170,20 @@
                         console.error('Error response:', error.response?.data);
                         
                         // Show more detailed error message
-                        let errorMessage = error.response?.data?.message || 
-                                         error.response?.data?.error || 
-                                         error.message || 
-                                         'Login failed. Please check your credentials.';
+                        let errorMessage = 'Login failed. Please check your credentials.';
                         
-                        // If we have detailed error info, show it
                         if (error.response?.data) {
                             const data = error.response.data;
+                            // Check for error object format
+                            if (data.error?.message) {
+                                errorMessage = data.error.message;
+                            } else if (data.message) {
+                                errorMessage = data.message;
+                            } else if (data.error) {
+                                errorMessage = typeof data.error === 'string' ? data.error : data.error.message || errorMessage;
+                            }
+                            
+                            // Add debug info if available
                             if (data.errorType) {
                                 errorMessage += ` (Type: ${data.errorType})`;
                             }
@@ -187,6 +193,11 @@
                             if (data.dbConnected === false) {
                                 errorMessage += ' - Database not connected';
                             }
+                            if (data.errorDetails) {
+                                console.log('Error details:', data.errorDetails);
+                            }
+                        } else if (error.message) {
+                            errorMessage = error.message;
                         }
                         
                         this.error = errorMessage;
