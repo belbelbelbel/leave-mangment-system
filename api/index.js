@@ -16,9 +16,18 @@ const mongoose = require('mongoose')
 app.use(async (req, res, next) => {
   try {
     await connectDB()
+    // Verify connection is ready
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('⚠️ Database connection not ready, state:', mongoose.connection.readyState)
+    }
     next()
   } catch (error) {
-    console.error('Database connection error:', error.message)
+    console.error('❌ Database connection error in middleware:', error.message)
+    console.error('Error details:', {
+      name: error.name,
+      code: error.code,
+      message: error.message
+    })
     // Continue to next middleware - routes will handle DB errors
     next()
   }
@@ -131,13 +140,22 @@ app.all("*", (req, res) => {
   })
 })
 
-// Error handler
+// Error handler - must be last
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err)
-  res.status(500).json({
-    message: "Internal server error",
-    error: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  console.error("Error name:", err.name)
+  console.error("Error message:", err.message)
+  console.error("Error stack:", err.stack)
+  
+  // Always include error details in Vercel for debugging
+  const isVercel = !!process.env.VERCEL
+  const isDev = process.env.NODE_ENV === 'development'
+  
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
+    error: (isVercel || isDev) ? err.message : undefined,
+    errorType: err.name,
+    stack: (isVercel || isDev) ? err.stack : undefined
   })
 })
 

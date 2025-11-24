@@ -48,11 +48,26 @@ const register = async (req, res) => {
 
     // Check if database is connected
     const mongoose = require('mongoose')
+    const connectDB = require('../config/db')
+    
+    // Ensure connection is established
+    try {
+      await connectDB()
+    } catch (dbError) {
+      console.error('❌ Database connection failed in register:', dbError.message)
+      return res.status(500).json({ 
+        message: "Database connection error. Please try again later.",
+        error: dbError.message,
+        errorType: dbError.name
+      })
+    }
+    
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
       return res.status(500).json({ 
         message: "Database connection error. Please try again later.",
-        error: "Database not connected"
+        error: "Database not connected",
+        dbState: mongoose.connection.readyState
       })
     }
 
@@ -113,13 +128,36 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body
 
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: "Email and password are required.",
+        received: { email: !!email, password: !!password }
+      })
+    }
+
     // Check if database is connected
     const mongoose = require('mongoose')
+    const connectDB = require('../config/db')
+    
+    // Ensure connection is established
+    try {
+      await connectDB()
+    } catch (dbError) {
+      console.error('❌ Database connection failed in login:', dbError.message)
+      return res.status(500).json({ 
+        message: "Database connection error. Please try again later.",
+        error: dbError.message,
+        errorType: dbError.name
+      })
+    }
+    
     if (mongoose.connection.readyState !== 1) {
       console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState)
       return res.status(500).json({ 
         message: "Database connection error. Please try again later.",
-        error: "Database not connected"
+        error: "Database not connected",
+        dbState: mongoose.connection.readyState
       })
     }
 

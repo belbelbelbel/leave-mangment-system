@@ -170,16 +170,26 @@
                         console.error('Error response:', error.response?.data);
                         
                         // Show more detailed error message
-                        const errorMessage = error.response?.data?.message || 
-                                           error.response?.data?.error || 
-                                           error.message || 
-                                           'Login failed. Please check your credentials.';
-                        this.error = errorMessage;
+                        let errorMessage = error.response?.data?.message || 
+                                         error.response?.data?.error || 
+                                         error.message || 
+                                         'Login failed. Please check your credentials.';
                         
-                        // If it's a server error, show helpful message
-                        if (error.response?.status === 500) {
-                            this.error = errorMessage + ' (Server error - check Vercel logs)';
+                        // If we have detailed error info, show it
+                        if (error.response?.data) {
+                            const data = error.response.data;
+                            if (data.errorType) {
+                                errorMessage += ` (Type: ${data.errorType})`;
+                            }
+                            if (data.errorCode) {
+                                errorMessage += ` (Code: ${data.errorCode})`;
+                            }
+                            if (data.dbConnected === false) {
+                                errorMessage += ' - Database not connected';
+                            }
                         }
+                        
+                        this.error = errorMessage;
                     } finally {
                         this.loading = false;
                     }
